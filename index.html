@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>StepUP</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Particle background -->
+<canvas id="particle-canvas"></canvas>
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="app-header">
+  <h1> StepUP</h1>
+  <div class="header-right" id="settings-info-header"></div>
+</header>
+
+<!-- ═══════════ PAGE: HOME ═══════════ -->
+<div class="page active" id="page-home">
+  <div class="main">
+
+    <!-- Setup -->
+    <!-- Portfolio Breakdown Donut -->
+    <div class="donut-section">
+    <div class="donut-wrap">
+    <canvas id="chart-donut"></canvas>
+    <div class="donut-center">
+    <div class="donut-label">Portfolio</div>
+    <div class="donut-value" id="donut-total">₹0</div>
+    </div>
+    </div>
+    <div class="donut-legend">
+    <div class="donut-leg-item">
+    <span class="donut-leg-dot" style="background:#58a6ff"></span>
+    <div>
+    <div class="donut-leg-label">Invested</div>
+    <div class="donut-leg-val" id="donut-invested">₹0</div>
+    </div>
+    </div>
+    <div class="donut-leg-item">
+    <span class="donut-leg-dot" style="background:#00c853"></span>
+    <div>
+    <div class="donut-leg-label">Profit</div>
+    <div class="donut-leg-val" id="donut-profit">₹0</div>
+    </div>
+    </div>
+    <div class="donut-leg-item">
+    <span class="donut-leg-dot" style="background:#f85149"></span>
+    <div>
+    <div class="donut-leg-label">Loss</div>
+    <div class="donut-leg-val" id="donut-loss">₹0</div>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Dashboard cards -->
+    <div class="cards">
+      <div class="card"><div class="card-label">Total Invested</div><div class="card-value blue" id="c-invested">₹0</div></div>
+      <div class="card"><div class="card-label">Portfolio Value</div><div class="card-value" id="c-value">₹0</div></div>
+      <div class="card"><div class="card-label">Profit / Loss</div><div class="card-value" id="c-pnl">₹0</div></div>
+      <div class="card"><div class="card-label">Return %</div><div class="card-value" id="c-ret">0.00%</div></div>
+      <div class="card"><div class="card-label">SIP Contributions</div><div class="card-value amber" id="c-sips">0</div><div class="card-sub" id="c-sips-sub"></div></div>
+      <div class="card">
+      <div class="card-label">XIRR / Annualized</div>
+      <div class="card-value green" id="c-xirr">—</div>
+      </div>
+      <div class="card">
+      <div class="card-label">Next SIP</div>
+      <div class="card-value amber" id="c-next-sip">—</div>
+      <div class="card-sub" id="c-next-sip-sub"></div>
+      </div>
+      <div class="card">
+      <div class="card-label">Win Streak</div>
+      <div class="card-value" id="c-streak">0</div>
+      </div>
+      <div class="card">
+      <div class="card-label">Avg Day</div>
+      <div class="card-value" id="c-avg-day">—</div>
+      </div>
+      <div class="card">
+      <div class="card-label">Days Active</div>
+      <div class="card-value blue" id="c-days">0</div>
+      </div>
+    </div>
+    
+    
+    </div>
+    
+    
+    
+    </div>
+    </div>
+    
+
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: HISTORY ═══════════ -->
+<div class="page" id="page-history">
+  <div class="main">
+    <div class="section">
+      <div class="section-head">
+        <h2>History</h2>
+        <span id="entry-count" style="font-size:.75rem;color:var(--muted);"></span>
+      </div>
+      <div class="history-controls">
+        <input type="date" id="history-search-date" class="history-search" placeholder="Search by date…" />
+        <button class="sort-btn sort-desc" id="sort-toggle-btn">
+          <span>Date</span><span class="sort-arrow"></span>
+        </button>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Date</th><th>% Chg</th><th>SIP</th>
+              <th>Portfolio</th><th>Invested</th><th style="text-align:right;">Act</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="7"><div class="empty">No entries yet.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: ADD ENTRY ═══════════ -->
+<div class="page" id="page-add">
+  <div class="main">
+
+    <!-- ── Helper: Convert total return % → daily % ── -->
+    <div class="add-entry-card helper-card">
+      <div class="helper-header">
+        <span class="helper-title"> Daily % Calculator</span>
+        <span class="helper-sub">Enter your broker's total return % to get today's daily change</span>
+      </div>
+
+      <div class="helper-row">
+        <div class="helper-field">
+          <label>Yesterday's Total Return %</label>
+          <div class="pct-input-wrap">
+            <input type="text" inputmode="decimal" id="helper-prev" placeholder="auto" autocomplete="off" />
+            <span class="pct-suffix">%</span>
+          </div>
+          <span class="helper-hint" id="helper-prev-hint"></span>
+        </div>
+        <div class="helper-arrow">→</div>
+        <div class="helper-field">
+          <label>Today's Total Return %</label>
+          <div class="pct-input-wrap">
+            <input type="text" inputmode="decimal" id="helper-today" placeholder="e.g. 4.37" autocomplete="off" />
+            <span class="pct-suffix">%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="helper-result" id="helper-result" style="display:none;">
+        <div class="helper-result-label">Daily % Change</div>
+        <div class="helper-result-value" id="helper-result-value">—</div>
+        <button class="btn btn-primary btn-sm helper-use-btn" id="helper-use-btn">Use this ↓</button>
+      </div>
+    </div>
+
+    <!-- ── Main entry form ── -->
+    <div class="add-entry-card">
+      <h2>Add Daily Entry</h2>
+      <p>Record today's portfolio % change to track your SIP growth.</p>
+      <div class="entry-form">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="entry-date" />
+        </div>
+        <div class="form-group">
+          <label>% Change</label>
+          <div class="pct-input-wrap">
+            <input type="text" inputmode="decimal" id="entry-pct" placeholder="+4.73 or -3.32" autocomplete="off" />
+            <span class="pct-suffix">%</span>
+          </div>
+        </div>
+      </div>
+      <p id="entry-preview" style="margin-top:12px;font-size:.78rem;color:var(--muted);font-family:var(--mono);min-height:1.2em;"></p>
+      <div style="margin-top:18px;">
+        <button class="btn btn-primary btn-block" id="btn-add-entry" style="padding:13px;">＋ Add Entry</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: GRAPH ═══════════ -->
+<div class="page" id="page-graph">
+  <div class="main">
+    <div class="section">
+      <div class="chart-panel active" id="tab-line" style="padding:14px 16px;">
+        <div class="chart-header">
+          <span class="chart-subtitle">Portfolio value over time — scroll/pinch to zoom, drag to pan</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="range-pills" id="range-pills-line">
+              <button class="range-pill" data-range="7d">1W</button>
+              <button class="range-pill" data-range="1">1M</button>
+              <button class="range-pill" data-range="3">3M</button>
+              <button class="range-pill" data-range="6">6M</button>
+              <button class="range-pill" data-range="12">1Y</button>
+              <button class="range-pill" data-range="36">3Y</button>
+              <button class="range-pill active" data-range="all">Max</button>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-reset-zoom">Reset Zoom</button>
+          </div>
+        </div>
+        <div class="overview-wrap" id="overview-wrap">
+          <canvas id="chart-overview"></canvas>
+          <div class="selection-box" id="selection-box">
+            <div class="sel-handle sel-handle-l" data-handle="left"></div>
+            <div class="sel-handle sel-handle-r" data-handle="right"></div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-line"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PAGE: USER ═══════════ -->
+<div class="page" id="page-user">
+  <div class="user-page">
+
+    <div class="user-avatar"><img src="https://raw.githubusercontent.com/microintel/endgram/main/photo/stepup-trans.png" width="100%" height="100%"></div>
+    <div class="user-name"></div>
+    <div class="user-sub" id="user-sub-line">No settings configured yet</div>
+    
+    <!-- SIP Settings -->
+    <div class="user-section">
+    <div class="user-section-title">SIP Settings</div>
+    <div style="padding:16px;">
+    <div class="form-row">
+    <div class="form-group">
+    <label>Monthly SIP (₹)</label>
+    <input type="text" inputmode="decimal" id="sip-amount" placeholder="5000" />
+    </div>
+    <div class="form-group">
+    <label>SIP Start Date</label>
+    <input type="date" id="sip-start" />
+    </div>
+    </div>
+    <div style="margin-top:12px;">
+    <button class="btn btn-primary btn-sm" id="btn-save-settings">Save Settings</button>
+    </div>
+    <p id="settings-info" style="margin-top:8px;font-size:.78rem;color:var(--amber);"></p>
+    </div>
+    </div>
+    
+   
+    <!-- Stats -->
+    <div class="user-section">
+      <div class="user-section-title">Portfolio Stats</div>
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="stat-cell-label">Entries</div><div class="stat-cell-value" id="us-entries">0</div></div>
+        <div class="stat-cell"><div class="stat-cell-label">Months Active</div><div class="stat-cell-value" id="us-months">0</div></div>
+        <div class="stat-cell"><div class="stat-cell-label">Best Day</div><div class="stat-cell-value green" id="us-best">—</div></div>
+        <div class="stat-cell"><div class="stat-cell-label">Worst Day</div><div class="stat-cell-value red" id="us-worst">—</div></div>
+      </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="user-section">
+      <div class="user-section-title">Appearance</div>
+      <div class="theme-toggle">
+        <button class="theme-btn" id="theme-btn-light" data-theme="light">☀️ Light</button>
+        <button class="theme-btn" id="theme-btn-dark"  data-theme="dark">⚫ Dark</button>
+      </div>
+    </div>
+
+    <!-- Data actions -->
+    <div class="user-section">
+      <div class="user-section-title">Data</div>
+      <div class="user-row" id="btn-export-row">
+        <div class="user-row-icon icon-green">⬆️</div>
+        <div class="user-row-info">
+          <div class="user-row-label">Export Data</div>
+          <div class="user-row-desc">Download your portfolio as a JSON file</div>
+        </div>
+        <div class="user-row-arrow">›</div>
+      </div>
+      <div class="user-row" id="btn-import-row">
+        <div class="user-row-icon icon-blue">⬇️</div>
+        <div class="user-row-info">
+          <div class="user-row-label">Import Data</div>
+          <div class="user-row-desc">Restore from a JSON backup file</div>
+        </div>
+        <div class="user-row-arrow">›</div>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="user-section">
+      <div class="user-section-title">Danger Zone</div>
+      <div class="user-row" id="btn-reset-row">
+        <div class="user-row-icon icon-red">🗑️</div>
+        <div class="user-row-info">
+          <div class="user-row-label">Reset All Data</div>
+          <div class="user-row-desc">Permanently deletes all entries and settings</div>
+        </div>
+        <div class="user-row-arrow" style="color:var(--red);">›</div>
+      </div>
+    </div>
+
+    <input type="file" id="import-file" accept=".json" style="display:none" />
+
+  </div>
+</div>
+
+<!-- ═══════════ BOTTOM NAV ═══════════ -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="page-home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Home
+  </button>
+  <button class="nav-item" data-page="page-history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+    </svg>
+    History
+  </button>
+  <button class="nav-item" data-page="page-add">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    Add
+  </button>
+  <button class="nav-item" data-page="page-graph">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+    Graph
+  </button>
+  <button class="nav-item" data-page="page-user">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+    Account
+  </button>
+</nav>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h3>Edit Entry</h3>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Date</label>
+      <input type="date" id="edit-date" />
+    </div>
+    <div class="form-group">
+      <label>% Change</label>
+      <div class="pct-input-wrap">
+        <input type="text" inputmode="decimal" id="edit-pct" placeholder="+4.73 or -3.32" />
+        <span class="pct-suffix">%</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="edit-cancel">Cancel</button>
+      <button class="btn btn-primary"   id="edit-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<footer class="app-footer">Developed by <span>Microintel</span></footer>
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function createParticles() {
+    particles = [];
+    const count = Math.floor((canvas.width * canvas.height) / 18000);
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.3,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        opacity: Math.random() * 0.4 + 0.1
+      });
+    }
+  }
+
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const color = isDark ? '88,166,255' : '47,129,247';
+
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${color},${p.opacity})`;
+      ctx.fill();
+    });
+
+    // Draw connecting lines for nearby particles
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(${color},${0.08 * (1 - dist / 100)})`;
+          ctx.lineWidth = 0.5;
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(drawParticles);
+  }
+
+  window.addEventListener('resize', () => { resize(); createParticles(); });
+  resize(); createParticles(); drawParticles();
+})();
+</script>
+<!-- JS modules: must be served over http (not file://) due to CORS -->
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
