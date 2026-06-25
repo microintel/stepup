@@ -616,6 +616,67 @@
 })();
 </script>
 <script type="module" src="app.js"></script>
+
+<!-- ═══════════ SERVICE WORKER REGISTRATION ═══════════ -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
+      // Detect a new SW waiting → show update toast
+      const checkWaiting = (reg) => {
+        if (reg.waiting) showUpdateToast(reg.waiting);
+      };
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateToast(newWorker);
+          }
+        });
+      });
+
+      checkWaiting(reg);
+
+      // Reload once the new SW takes control
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) { refreshing = true; location.reload(); }
+      });
+
+    } catch (err) {
+      console.warn('SW registration failed:', err);
+    }
+  });
+}
+
+function showUpdateToast(worker) {
+  // Reuse the app's existing #toast element
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+
+  toast.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span>🔄 Update available</span>
+      <button onclick="applyUpdate()" style="
+        background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+        color:#fff;border-radius:8px;padding:3px 12px;font-size:.8rem;cursor:pointer;">
+        Refresh
+      </button>
+    </div>`;
+  toast.classList.add('show');
+
+  window._pendingSW = worker;
+}
+
+window.applyUpdate = function () {
+  if (window._pendingSW) {
+    window._pendingSW.postMessage('SKIP_WAITING');
+  }
+};
+</script>
 </body>
 </html>
 
