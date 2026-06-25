@@ -2,8 +2,8 @@
    calc.js — SIP recalculation logic
 ══════════════════════════════════════════════════════ */
 
-import { dbPut }    from './db.js';
-import { dateToStr } from './helpers.js';
+import { dbPutEntry } from './db.js';
+import { dateToStr }  from './helpers.js';
 
 /**
  * Get the actual SIP date for a given year+month,
@@ -127,9 +127,9 @@ export function recalcAll(raw, cfg) {
 }
 
 /** Persist the recalculated values back to IndexedDB. */
-export async function saveCalcEntries(calc) {
+export async function saveCalcEntries(calc, profileId) {
   for (const e of calc) {
-    await dbPut('entries', {
+    await dbPutEntry(profileId, {
       id:             e.id,
       date:           e.date,
       percentChange:  e.percentChange,
