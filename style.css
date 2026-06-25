@@ -2,8 +2,8 @@
    CSS Variables — Dark (default)
 ══════════════════════════════════════════════════════ */
 :root {
-  --bg:          #07090f;
-  --bg2:         #0b0f1a;
+  --bg:          #000;
+  --bg2:         #000;
   --surface:     #0f1424;
   --surface2:    #141a2e;
   --surface3:    #1a2240;
@@ -898,7 +898,7 @@ html[data-theme="light"] .donut-section { background: rgba(255,255,255,.8); }
   content: '';
   position: absolute; top: -40px; left: -40px;
   width: 220px; height: 220px;
-  background: radial-gradient(circle, rgba(224,48,48,.08), transparent 70%);
+ // background: radial-gradient(circle, rgba(224,48,48,.08), transparent 70%);
   pointer-events: none;
 }
 
