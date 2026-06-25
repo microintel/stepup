@@ -11,6 +11,13 @@
                user-scalable=no,
                viewport-fit=cover">
 <title>StepUP</title>
+<!-- Anti-flash: apply saved theme before first paint -->
+<script>
+  (function(){
+    var t = localStorage.getItem('sip-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -467,6 +474,15 @@
     <input type="file" id="import-all-file" accept=".json" style="display:none" />
 
   </div>
+</div>
+
+<!-- ═══════════ SWIPE DOTS (mobile position indicator) ═══════════ -->
+<div class="swipe-dots" id="swipe-dots" aria-hidden="true">
+  <span class="swipe-dot active" data-page="page-home"></span>
+  <span class="swipe-dot" data-page="page-history"></span>
+  <span class="swipe-dot" data-page="page-add"></span>
+  <span class="swipe-dot" data-page="page-graph"></span>
+  <span class="swipe-dot" data-page="page-user"></span>
 </div>
 
 <!-- ═══════════ BOTTOM NAV ═══════════ -->

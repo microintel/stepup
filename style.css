@@ -39,25 +39,32 @@
 }
 
 /* ══════════════════════════════════════════════════════
-   Light Theme
+   Light Theme — warm off-white, easy on the eyes
 ══════════════════════════════════════════════════════ */
 html[data-theme="light"] {
-  --bg:          #f0f2f9;
-  --bg2:         #e8ebf6;
-  --surface:     #ffffff;
-  --surface2:    #f4f6fd;
-  --surface3:    #eaedfa;
-  --border:      #dde2f5;
-  --border2:     #c8cfed;
-  --text:        #0d1230;
-  --text2:       #4a5480;
-  --muted:       #8a96be;
-  --indigo-dim:  #fde8e8;
-  --green-dim:   #dcfce7;
-  --red-dim:     #ffe4ea;
-  --amber-dim:   #fef3c7;
-  --purple-dim:  #f3e8ff;
-  --blue-dim:    #e0f6ff;
+  /* Backgrounds — warm creamy tones, never pure white */
+  --bg:          #f5f0eb;   /* warm parchment base */
+  --bg2:         #ede8e1;   /* slightly deeper parchment */
+  --surface:     #faf7f3;   /* card face — warm off-white */
+  --surface2:    #f0ece5;   /* subtle inset */
+  --surface3:    #e8e2d9;   /* deeper inset / hover */
+
+  /* Borders */
+  --border:      #ddd6cb;
+  --border2:     #c9c0b2;
+
+  /* Text */
+  --text:        #1a1410;   /* warm near-black */
+  --text2:       #5a4e43;   /* warm mid-tone */
+  --muted:       #9e9082;   /* warm muted */
+
+  /* Accent dim backgrounds */
+  --indigo-dim:  #fbeae8;
+  --green-dim:   #e4f5eb;
+  --red-dim:     #fce8ed;
+  --amber-dim:   #fef4da;
+  --purple-dim:  #f4ecff;
+  --blue-dim:    #e5f5ff;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1316,4 +1323,40 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
   .skip-row { flex-direction: column; align-items: stretch; }
   .inline-add-row { flex-direction: column; align-items: stretch; }
   .btn-block-mobile { width: 100%; justify-content: center; }
+}
+
+/* ══════════════════════════════════════════════════════
+   Swipe Navigation — mobile hint dots
+══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .page {
+    -webkit-user-select: none;
+    user-select: none;
+    transition: opacity 0.15s ease;
+  }
+  .swipe-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0 2px;
+    position: fixed;
+    bottom: calc(var(--nav-h, 68px) + 2px);
+    left: 0; right: 0;
+    z-index: 90;
+    pointer-events: none;
+  }
+  .swipe-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border2);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .swipe-dot.active {
+    background: var(--indigo);
+    transform: scale(1.4);
+  }
+}
+@media (min-width: 769px) {
+  .swipe-dots { display: none; }
 }
