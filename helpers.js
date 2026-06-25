@@ -17,6 +17,19 @@ export function toast(msg, dur = 2400) {
   setTimeout(() => el.classList.remove('show'), dur);
 }
 
+/**
+ * Format a Date object as YYYY-MM-DD using LOCAL timezone.
+ * Never use .toISOString().slice(0,10) for locally-constructed dates —
+ * in IST (UTC+5:30) midnight local = 18:30 previous day UTC, which shifts
+ * the date back by one day.
+ */
+export function dateToStr(d) {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dy = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dy}`;
+}
+
 export function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return dateToStr(new Date());
 }

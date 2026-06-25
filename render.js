@@ -94,8 +94,12 @@ export function renderDashboard(calc, settings) {
   rEl.className   = 'card-value ' + (ret >= 0 ? 'green' : 'red');
 
   /* ── 5. SIP Contributions ── */
-  document.getElementById('c-sips').textContent     = sips;
-  document.getElementById('c-sips-sub').textContent = `×₹${settings.sipAmount.toLocaleString('en-IN')}`;
+  document.getElementById('c-sips').textContent = sips;
+  const schedule = settings.sipSchedule || [];
+  const subLabel = schedule.length > 1
+    ? `stepped`
+    : `×₹${settings.sipAmount.toLocaleString('en-IN')}`;
+  document.getElementById('c-sips-sub').textContent = subLabel;
 
   /* ── 6. XIRR — true money-weighted annualized return ──
      Real brokerages build the actual cash-flow ledger:
@@ -109,8 +113,8 @@ export function renderDashboard(calc, settings) {
   if (xirrEl) {
     const flows = [];
     for (const e of calc) {
-      if (e.sipAdded && e.sipCount > 0) {
-        flows.push({ date: new Date(e.date), amount: -e.sipCount * settings.sipAmount });
+      if (e.sipAdded && e.sipTotal > 0) {
+        flows.push({ date: new Date(e.date), amount: -e.sipTotal });
       }
     }
     flows.push({ date: new Date(last.date), amount: last.portfolioValue });
@@ -203,7 +207,7 @@ export function renderTable(calc, settings) {
   tbody.innerHTML = sorted.map((e, i) => {
     const pct      = e.percentChange;
     const sipBadge = e.sipAdded
-      ? `<span class="sip-badge sip-yes">+₹${(e.sipCount * settings.sipAmount).toLocaleString('en-IN')}</span>`
+      ? `<span class="sip-badge sip-yes">+₹${(e.sipTotal || e.sipCount * settings.sipAmount).toLocaleString('en-IN')}</span>`
       : `<span class="sip-badge sip-no">—</span>`;
     return `<tr>
       <td class="mono" style="color:var(--muted)">${i + 1}</td>

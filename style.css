@@ -1068,3 +1068,57 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
     transition-duration: .01ms !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   Step-Up SIP & Skip Month UI
+══════════════════════════════════════════════════════ */
+.stepup-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.schedule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.schedule-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.schedule-amt {
+  font-family: var(--mono);
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--green);
+}
+.schedule-from {
+  font-size: .75rem;
+  color: var(--muted);
+}
+.schedule-badge {
+  font-size: .68rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+}
+.muted-note {
+  font-size: .75rem;
+  color: var(--muted);
+}
