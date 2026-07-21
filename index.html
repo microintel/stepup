@@ -20,6 +20,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -422,6 +423,14 @@
     <div class="user-section">
       <div class="user-section-title"><i class="bi bi-database"></i> Data</div>
       <div class="data-group-label">Current SIP — “<span id="data-current-sip-name"></span>”</div>
+      <div class="user-row" id="btn-pdf-report-row">
+        <div class="user-row-icon icon-amber"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+        <div class="user-row-info">
+          <div class="user-row-label">Download PDF Report</div>
+          <div class="user-row-desc">Full report — daily change, SIP, skipped &amp; step-up details</div>
+        </div>
+        <i class="bi bi-chevron-right user-row-arrow"></i>
+      </div>
       <div class="user-row" id="btn-export-row">
         <div class="user-row-icon icon-green"><i class="bi bi-upload"></i></div>
         <div class="user-row-info">

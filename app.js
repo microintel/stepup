@@ -26,6 +26,8 @@ let activeProfile  = null; // {id, name}
 let settings       = null;
 let entries        = [];
 
+import { generatePdfReport } from './pdf-report.js';
+
 /* Re-export for inline onclick handlers */
 window.startEdit    = startEdit;
 window.deleteEntry  = deleteEntry;
@@ -692,6 +694,10 @@ async function deleteEntry(id) {
 /* ══════════════════════════════════════════════════════
    Export / Import / Reset (profile-scoped)
 ══════════════════════════════════════════════════════ */
+document.getElementById('btn-pdf-report-row').addEventListener('click', () => {
+  generatePdfReport(entries, settings, activeProfile?.name);
+});
+
 document.getElementById('btn-export-row').addEventListener('click', () => {
   const a   = document.createElement('a');
   const payload = { profileName: activeProfile?.name, settings, entries };
