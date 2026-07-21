@@ -479,6 +479,33 @@
       </div>
     </div>
 
+    <!-- How to Use -->
+    <div class="user-section">
+      <div class="user-section-title"><i class="bi bi-question-circle"></i> How to Use</div>
+
+      <div class="howto-method">
+        <div class="howto-method-title">Method 1 — Enter Daily Changes Manually</div>
+        <ol class="howto-steps">
+          <li>Get today's daily % change for your fund from your brokerage, or the fund's own website/app.</li>
+          <li>Tap <strong>Add Entry</strong> and enter that % change for the day.</li>
+          <li>The app auto-calculates SIP additions, invested amount and portfolio value from there.</li>
+        </ol>
+      </div>
+
+      <div class="howto-method">
+        <div class="howto-method-title">Method 2 — Import From NAV History <span class="howto-badge">For backdating an existing SIP</span></div>
+        <ol class="howto-steps">
+          <li>Download the NAV history for your fund from its website or app (Excel/CSV).</li>
+          <li>Note the true values of your first 3 original entries — use these to anchor the calculation.</li>
+          <li>Export this SIP as a JSON file — see <strong>Export This SIP</strong> above.</li>
+          <li>Send the NAV Excel sheet and the exported JSON file to an AI, and ask it to calculate the daily entries.</li>
+          <li>Import the AI-generated file back in — see <strong>Import Into This SIP</strong> above.</li>
+        </ol>
+      </div>
+
+      <div class="howto-note"><i class="bi bi-cloud-fill"></i> Cloud backup is coming soon — for now, keep your exported JSON files safe.</div>
+    </div>
+
     <input type="file" id="import-file" accept=".json" style="display:none" />
     <input type="file" id="import-all-file" accept=".json" style="display:none" />
 
@@ -688,4 +715,5 @@ window.applyUpdate = function () {
 </script>
 </body>
 </html>
+
 
