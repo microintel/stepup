@@ -694,8 +694,14 @@ async function deleteEntry(id) {
 /* ══════════════════════════════════════════════════════
    Export / Import / Reset (profile-scoped)
 ══════════════════════════════════════════════════════ */
-document.getElementById('btn-pdf-report-row').addEventListener('click', () => {
-  generatePdfReport(entries, settings, activeProfile?.name);
+document.getElementById('btn-pdf-report-row').addEventListener('click', async () => {
+  toast('Generating PDF report…');
+  try {
+    await generatePdfReport(entries, settings, activeProfile?.name);
+  } catch (err) {
+    console.error(err);
+    toast('PDF generation failed.');
+  }
 });
 
 document.getElementById('btn-export-row').addEventListener('click', () => {

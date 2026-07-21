@@ -1,17 +1,66 @@
 /* ══════════════════════════════════════════════════════
    pdf-report.js — Full SIP PDF report (core jsPDF only)
-   No autoTable plugin dependency — tables are hand-drawn so
-   nothing can silently fail to attach from a CDN mismatch.
-   Includes: daily % change, invested/value, SIP amounts,
-   skipped instalments, step-up schedule. Header = project name
-   + fund name. Footer = "Developed by Microintel" on every page.
+   No autoTable plugin dependency — tables are hand-drawn.
+
+   Rupee symbol fix: jsPDF's built-in Helvetica font has no glyph
+   for ₹ (U+20B9), which is why it printed as a stray superscript
+   "1". We fetch a Unicode font (Noto Sans, which includes the
+   Currency Symbols block) at report-generation time, embed it in
+   the PDF, and use it for every piece of text so ₹ renders correctly.
+
+   Includes: daily % change, invested/value, SIP amounts, skipped
+   instalments, step-up schedule, and an overall portfolio-value
+   line chart. Header = project name + fund name. Footer =
+   "Developed by Microintel" on every page.
 ══════════════════════════════════════════════════════ */
 
 import { recalcAll } from './calc.js';
-import { fmt, todayStr } from './helpers.js';
+import { fmt, todayStr, toast } from './helpers.js';
 
 const PROJECT_NAME = 'StepUP';
 const FOOTER_TEXT  = 'Developed by Microintel';
+
+/* Noto Sans includes the Currency Symbols Unicode block (incl. ₹),
+   unlike jsPDF's built-in Helvetica/Times/Courier. */
+const FONT_REGULAR_URL = 'https://cdn.jsdelivr.net/gh/notofonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf';
+const FONT_BOLD_URL    = 'https://cdn.jsdelivr.net/gh/notofonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Bold.ttf';
+
+let fontsReady = null; // cached promise so repeat reports don't re-download
+
+/** Fetch a font file and return it as a base64 string (chunked to avoid call-stack limits). */
+async function fetchFontBase64(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Font fetch failed (${res.status}): ${url}`);
+  const buf   = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary  = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/** Registers NotoSans (normal + bold) into a jsPDF doc's virtual filesystem. */
+async function ensureUnicodeFont(doc) {
+  if (!fontsReady) {
+    fontsReady = Promise.all([
+      fetchFontBase64(FONT_REGULAR_URL),
+      fetchFontBase64(FONT_BOLD_URL).catch(() => null), // bold is a nice-to-have
+    ]);
+  }
+  const [regularB64, boldB64] = await fontsReady;
+
+  doc.addFileToVFS('NotoSans-Regular.ttf', regularB64);
+  doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
+  if (boldB64) {
+    doc.addFileToVFS('NotoSans-Bold.ttf', boldB64);
+    doc.addFont('NotoSans-Bold.ttf', 'NotoSans', 'bold');
+  } else {
+    doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'bold'); // fallback: regular weight
+  }
+  doc.setFont('NotoSans', 'normal');
+}
 
 /** Amount active on a given SIP date, per the step-up schedule (mirrors calc.js). */
 function amountForDate(sipSchedule, dateStr) {
@@ -25,6 +74,80 @@ function amountForDate(sipSchedule, dateStr) {
 }
 
 /**
+ * Render the full portfolio-value history as an off-screen Chart.js line
+ * chart and return { dataUrl, width, height } for embedding as an image.
+ */
+async function renderOverallChartImage(calc) {
+  if (!window.Chart || !calc.length) return null;
+
+  const canvas = document.createElement('canvas');
+  const W = 1200, H = 480;
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.position = 'fixed';
+  canvas.style.left = '-99999px';
+  canvas.style.top  = '0';
+  document.body.appendChild(canvas);
+
+  const labels = calc.map(e => e.date);
+  const values = calc.map(e => e.portfolioValue);
+  const invested = calc.map(e => e.investedAmount);
+  const positive = values[values.length - 1] >= invested[invested.length - 1];
+
+  const chart = new window.Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Portfolio Value',
+          data: values,
+          borderColor: positive ? '#16a34a' : '#dc2626',
+          backgroundColor: positive ? 'rgba(22,163,74,0.15)' : 'rgba(220,38,38,0.15)',
+          borderWidth: 3,
+          tension: 0.35,
+          pointRadius: 0,
+          fill: true,
+        },
+        {
+          label: 'Invested',
+          data: invested,
+          borderColor: '#64748b',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          tension: 0,
+          pointRadius: 0,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: false,
+      animation: false,
+      devicePixelRatio: 2,
+      layout: { padding: 12 },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '#334155', font: { size: 16 } } },
+        tooltip: { enabled: false },
+      },
+      scales: {
+        x: { display: true, ticks: { color: '#64748b', maxTicksLimit: 8, font: { size: 12 } }, grid: { color: '#e2e8f0' } },
+        y: { display: true, ticks: { color: '#64748b', font: { size: 12 } }, grid: { color: '#e2e8f0' } },
+      },
+    },
+  });
+
+  // Two rAF ticks so Chart.js has fully painted the static (non-animated) canvas.
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const dataUrl = chart.toBase64Image('image/png', 1.0);
+  chart.destroy();
+  canvas.remove();
+
+  return { dataUrl, width: W, height: H };
+}
+
+/**
  * Hand-drawn table with automatic pagination + repeating header row.
  * @returns {number} the Y position after the table.
  */
@@ -35,7 +158,7 @@ function drawTable(doc, { startY, margin, pageW, pageH, head, rows, widths, alig
   function drawHeader() {
     doc.setFillColor(headFill[0], headFill[1], headFill[2]);
     doc.rect(margin, y, tableW, headH, 'F');
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('NotoSans', 'bold');
     doc.setFontSize(fontSize);
     doc.setTextColor(255, 255, 255);
     let x = margin;
@@ -49,7 +172,7 @@ function drawTable(doc, { startY, margin, pageW, pageH, head, rows, widths, alig
   }
 
   drawHeader();
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('NotoSans', 'normal');
   doc.setFontSize(fontSize);
 
   rows.forEach((row, ri) => {
@@ -57,7 +180,7 @@ function drawTable(doc, { startY, margin, pageW, pageH, head, rows, widths, alig
       doc.addPage();
       y = 50;
       drawHeader();
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('NotoSans', 'normal');
       doc.setFontSize(fontSize);
     }
     if (ri % 2 === 1) {
@@ -88,7 +211,7 @@ function drawTable(doc, { startY, margin, pageW, pageH, head, rows, widths, alig
  * @param {Object} settings settings/config for the profile
  * @param {string} fundName display name of the active profile/fund
  */
-export function generatePdfReport(entries, settings, fundName) {
+export async function generatePdfReport(entries, settings, fundName) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert('PDF library failed to load — check your connection and try again.');
     return;
@@ -104,6 +227,14 @@ export function generatePdfReport(entries, settings, fundName) {
   const pageH  = doc.internal.pageSize.getHeight();
   const margin = 40;
 
+  try {
+    await ensureUnicodeFont(doc);
+  } catch (err) {
+    console.error(err);
+    alert('Could not load the font needed for the ₹ symbol — check your internet connection and try again.');
+    return;
+  }
+
   const calc  = recalcAll(entries, settings);
   const last  = calc[calc.length - 1];
   const pnl   = last.portfolioValue - last.investedAmount;
@@ -116,12 +247,12 @@ export function generatePdfReport(entries, settings, fundName) {
   const skipped = (settings.skippedSipDates || []).slice().sort();
 
   /* ── Header: project name + fund name ── */
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('NotoSans', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(20, 20, 20);
   doc.text(PROJECT_NAME, margin, 50);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('NotoSans', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
   doc.text('SIP Report', pageW - margin, 50, { align: 'right' });
@@ -129,19 +260,19 @@ export function generatePdfReport(entries, settings, fundName) {
   doc.setDrawColor(220, 220, 220);
   doc.line(margin, 60, pageW - margin, 60);
 
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('NotoSans', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(20, 20, 20);
   doc.text(`Fund: ${fundName || 'Untitled SIP'}`, margin, 82);
 
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('NotoSans', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
   doc.text(`Generated on ${todayStr()}`, margin, 96);
 
   /* ── Summary ── */
   let y = 118;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('NotoSans', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 20);
   doc.text('Summary', margin, y);
@@ -158,17 +289,34 @@ export function generatePdfReport(entries, settings, fundName) {
   doc.setFontSize(10);
   summary.forEach(([label, value]) => {
     y += 18;
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('NotoSans', 'bold');
     doc.setTextColor(90, 90, 90);
     doc.text(label, margin, y);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('NotoSans', 'normal');
     doc.setTextColor(20, 20, 20);
     doc.text(value, pageW - margin, y, { align: 'right' });
   });
   y += 26;
 
+  /* ── Overall portfolio growth chart ── */
+  toast('Generating chart…');
+  const chartImg = await renderOverallChartImage(calc);
+  if (chartImg) {
+    const imgW = pageW - margin * 2;
+    const imgH = imgW * (chartImg.height / chartImg.width);
+    if (y + imgH > pageH - 60) { doc.addPage(); y = 50; }
+    doc.setFont('NotoSans', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(20, 20, 20);
+    doc.text('Overall Portfolio Growth', margin, y);
+    y += 8;
+    doc.addImage(chartImg.dataUrl, 'PNG', margin, y, imgW, imgH);
+    y += imgH + 22;
+  }
+
   /* ── Step-up schedule ── */
-  doc.setFont('helvetica', 'bold');
+  if (y > pageH - 100) { doc.addPage(); y = 50; }
+  doc.setFont('NotoSans', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 20);
   doc.text('Step-Up Schedule', margin, y);
@@ -184,7 +332,8 @@ export function generatePdfReport(entries, settings, fundName) {
   y += 22;
 
   /* ── Skipped instalments ── */
-  doc.setFont('helvetica', 'bold');
+  if (y > pageH - 100) { doc.addPage(); y = 50; }
+  doc.setFont('NotoSans', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 20);
   doc.text('Skipped SIP Instalments', margin, y);
@@ -201,7 +350,7 @@ export function generatePdfReport(entries, settings, fundName) {
     });
     y += 22;
   } else {
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('NotoSans', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(120, 120, 120);
     doc.text('No instalments skipped.', margin, y + 14);
@@ -210,7 +359,7 @@ export function generatePdfReport(entries, settings, fundName) {
 
   /* ── Daily change history (newest first) ── */
   if (y > pageH - 100) { doc.addPage(); y = 50; }
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('NotoSans', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 20);
   doc.text('Daily Change History', margin, y);
@@ -250,7 +399,7 @@ export function generatePdfReport(entries, settings, fundName) {
     const h = doc.internal.pageSize.getHeight();
     doc.setDrawColor(230, 230, 230);
     doc.line(margin, h - 40, pageW - margin, h - 40);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('NotoSans', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(140, 140, 140);
     doc.text(FOOTER_TEXT, margin, h - 25);
@@ -259,4 +408,5 @@ export function generatePdfReport(entries, settings, fundName) {
 
   const filename = `${PROJECT_NAME}-${(fundName || 'SIP').replace(/\s+/g, '-')}-${todayStr()}.pdf`;
   doc.save(filename);
+  toast('PDF downloaded ✓');
 }
