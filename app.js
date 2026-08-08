@@ -15,7 +15,8 @@ import {
 } from './charts.js';
 import {
   renderAll, renderTable, renderUserPage,
-  setHistorySortDir, setHistorySearchDate,
+  setHistorySortDir, setHistorySearchDate, setGrowthGranularity,
+  setMonthlyTrendYearRange,
 } from './render.js';
 
 /* ══════════════════════════════════════════════════════
@@ -253,7 +254,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.page).classList.add('active');
     syncSwipeDots(btn.dataset.page);
-    if (btn.dataset.page === 'page-graph')   setTimeout(() => renderLineChart(recalcAll(entries, settings)), 50);
+    if (btn.dataset.page === 'page-graph')   setTimeout(() => renderAll(entries, settings), 50);
     if (btn.dataset.page === 'page-history') renderTable(recalcAll(entries, settings), settings);
     if (btn.dataset.page === 'page-user')    {
       renderUserPage(entries, settings);
@@ -881,6 +882,32 @@ document.getElementById('btn-reset-zoom').addEventListener('click', () => {
 });
 
 /* ══════════════════════════════════════════════════════
+   Growth / Loss Toggle (Monthly / Yearly)
+══════════════════════════════════════════════════════ */
+document.querySelectorAll('#growth-toggle .range-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('#growth-toggle .range-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    setGrowthGranularity(pill.dataset.granularity);
+    renderAll(entries, settings);
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   Monthly Trend — Year Range Selectors
+══════════════════════════════════════════════════════ */
+function onTrendYearChange() {
+  const fromSel = document.getElementById('trend-year-from');
+  const toSel   = document.getElementById('trend-year-to');
+  let from = fromSel.value, to = toSel.value;
+  if (from > to) { from = to; fromSel.value = from; } // keep range valid
+  setMonthlyTrendYearRange(from, to);
+  renderAll(entries, settings);
+}
+document.getElementById('trend-year-from')?.addEventListener('change', onTrendYearChange);
+document.getElementById('trend-year-to')?.addEventListener('change', onTrendYearChange);
+
+/* ══════════════════════════════════════════════════════
    Theme
 ══════════════════════════════════════════════════════ */
 function applyTheme(theme) {
@@ -889,7 +916,7 @@ function applyTheme(theme) {
   document.querySelectorAll('.theme-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.theme === theme));
   if (document.getElementById('page-graph').classList.contains('active')) {
-    renderLineChart(recalcAll(entries, settings));
+    renderAll(entries, settings);
   }
 }
 document.querySelectorAll('.theme-btn').forEach(btn =>

@@ -587,6 +587,16 @@ html[data-theme="light"] .section { background: rgba(255,255,255,.8); }
   box-shadow: 0 1px 5px rgba(224,48,48,.18);
 }
 
+.year-select {
+  padding: 4px 8px; border-radius: 8px;
+  font-size: .72rem; font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text2);
+  cursor: pointer; font-family: var(--mono);
+}
+.year-select:focus { outline: none; border-color: var(--indigo); }
+.year-range-label { color: var(--muted); font-size: .72rem; }
+
 /* ══════════════════════════════════════════════════════
    History Table
 ══════════════════════════════════════════════════════ */

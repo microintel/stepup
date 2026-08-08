@@ -14,7 +14,7 @@
    "Developed by Microintel" on every page.
 ══════════════════════════════════════════════════════ */
 
-import { recalcAll } from './calc.js';
+import { recalcAll, periodGrowth } from './calc.js';
 import { fmt, todayStr, toast } from './helpers.js';
 
 const PROJECT_NAME = 'StepUP';
@@ -312,6 +312,34 @@ export async function generatePdfReport(entries, settings, fundName) {
     y += 8;
     doc.addImage(chartImg.dataUrl, 'PNG', margin, y, imgW, imgH);
     y += imgH + 22;
+  }
+
+  /* ── Monthly Growth / Loss ── */
+  const monthPeriods = periodGrowth(calc, 'month');
+  if (monthPeriods.length) {
+    if (y > pageH - 100) { doc.addPage(); y = 50; }
+    doc.setFont('NotoSans', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(20, 20, 20);
+    doc.text('Monthly Growth / Loss', margin, y);
+    y += 8;
+
+    const usableW2 = pageW - margin * 2;
+    const growthRows = [...monthPeriods].reverse().map(p => {
+      const pctText = p.growthPct === null ? '—' : `${p.growthPct >= 0 ? '+' : ''}${p.growthPct.toFixed(2)}%`;
+      const text  = (p.growth >= 0 ? '+' : '') + fmt(p.growth);
+      const color = p.growth >= 0 ? [22, 163, 74] : [220, 38, 38];
+      return [p.label, fmt(p.invested), fmt(p.value), { text, color }, { text: pctText, color }];
+    });
+
+    y = drawTable(doc, {
+      startY: y, margin, pageW, pageH,
+      head: ['Month', 'Invested', 'Portfolio Value', 'Growth / Loss', '%'],
+      rows: growthRows,
+      widths: [usableW2 * 0.20, usableW2 * 0.23, usableW2 * 0.23, usableW2 * 0.20, usableW2 * 0.14],
+      aligns: ['left', 'right', 'right', 'right', 'right'],
+    });
+    y += 22;
   }
 
   /* ── Step-up schedule ── */

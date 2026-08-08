@@ -3,14 +3,43 @@
 ══════════════════════════════════════════════════════ */
 
 import { fmtK, fmtPct } from './helpers.js';
-import { recalcAll }     from './calc.js';
-import { renderLineChart, getActiveRange, renderDonutChart } from './charts.js';
+import { recalcAll, periodGrowth } from './calc.js';
+import { renderLineChart, getActiveRange, renderDonutChart, renderGrowthChart, renderMonthlyLineChart } from './charts.js';
 
-let historySortDir    = 'desc';
-let historySearchDate = '';
+let historySortDir      = 'desc';
+let historySearchDate   = '';
+let growthGranularity   = 'month';
+let trendYearRange      = { from: null, to: null };
 
-export function setHistorySortDir(val)    { historySortDir    = val; }
-export function setHistorySearchDate(val) { historySearchDate = val; }
+export function setHistorySortDir(val)     { historySortDir    = val; }
+export function setHistorySearchDate(val)  { historySearchDate = val; }
+export function setGrowthGranularity(val)  { growthGranularity = val; }
+export function setMonthlyTrendYearRange(from, to) { trendYearRange = { from, to }; }
+
+/**
+ * Fill the "From Year" / "To Year" selects on the Monthly Trend panel.
+ * Preserves the user's current selection across re-renders; only resets
+ * to the full range when the set of available years actually changes.
+ */
+function populateYearSelects(monthPeriods) {
+  const fromSel = document.getElementById('trend-year-from');
+  const toSel   = document.getElementById('trend-year-to');
+  if (!fromSel || !toSel || !monthPeriods.length) return;
+
+  const years = [...new Set(monthPeriods.map(p => p.period.slice(0, 4)))];
+  const key   = years.join(',');
+
+  if (fromSel.dataset.years !== key) {
+    const optsHtml = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    fromSel.innerHTML = optsHtml;
+    toSel.innerHTML   = optsHtml;
+    fromSel.dataset.years = key;
+    toSel.dataset.years   = key;
+    trendYearRange = { from: years[0], to: years[years.length - 1] };
+  }
+  fromSel.value = trendYearRange.from;
+  toSel.value   = trendYearRange.to;
+}
 
 /**
  * True XIRR via Newton-Raphson, matching the standard brokerage/Excel formula.
@@ -47,7 +76,8 @@ export function renderDashboard(calc, settings) {
   /* ── Reset all cards when no data ── */
   if (!calc.length || !settings) {
     ['c-invested','c-value','c-pnl','c-ret','c-sips',
-     'c-xirr','c-days','c-next-sip','c-streak','c-avg-day'].forEach(id => {
+     'c-xirr','c-days','c-next-sip','c-streak','c-avg-day',
+     'c-month-growth','c-year-growth','c-avg-growth'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.className = 'card-value' +
@@ -57,6 +87,18 @@ export function renderDashboard(calc, settings) {
         id === 'c-ret'  ? '0.00%' :
         id === 'c-days' || id === 'c-sips' || id === 'c-streak' ? '0' : '—';
     });
+    const mSub = document.getElementById('c-month-growth-sub');
+    if (mSub) mSub.textContent = '';
+    const ySub = document.getElementById('c-year-growth-sub');
+    if (ySub) ySub.textContent = '';
+    const avgSub = document.getElementById('c-avg-growth-sub');
+    if (avgSub) avgSub.textContent = '';
+    const mIcon = document.getElementById('card-icon-month-growth');
+    if (mIcon) mIcon.className = 'card-icon-wrap';
+    const yIcon = document.getElementById('card-icon-year-growth');
+    if (yIcon) yIcon.className = 'card-icon-wrap';
+    const avgIcon = document.getElementById('card-icon-avg-growth');
+    if (avgIcon) avgIcon.className = 'card-icon-wrap';
     const sub = document.getElementById('c-sips-sub');
     if (sub) sub.textContent = '';
     const nextSub = document.getElementById('c-next-sip-sub');
@@ -179,6 +221,85 @@ export function renderDashboard(calc, settings) {
     avgEl.className   = 'card-value ' + (avg >= 0 ? 'green' : 'red');
   }
 
+  /* ── 11. Monthly Growth / Loss (current month vs previous) ── */
+  const monthPeriods = periodGrowth(calc, 'month');
+  const mEl = document.getElementById('c-month-growth');
+  if (mEl && monthPeriods.length) {
+    const m = monthPeriods[monthPeriods.length - 1];
+    mEl.textContent = (m.growth >= 0 ? '+' : '') + fmtK(m.growth);
+    mEl.className   = 'card-value ' + (m.growth >= 0 ? 'green' : 'red');
+    const mSub = document.getElementById('c-month-growth-sub');
+    if (mSub) {
+      const pctText = m.growthPct === null ? '' : ` · ${m.growthPct >= 0 ? '+' : ''}${m.growthPct.toFixed(2)}%`;
+      mSub.textContent = m.label + pctText;
+    }
+    const mIcon = document.getElementById('card-icon-month-growth');
+    if (mIcon) mIcon.className = 'card-icon-wrap ' + (m.growth >= 0 ? 'green' : 'red');
+  }
+
+  /* ── 12. Yearly Growth / Loss (current year vs previous) ── */
+  const yearPeriods = periodGrowth(calc, 'year');
+  const yEl = document.getElementById('c-year-growth');
+  if (yEl && yearPeriods.length) {
+    const yy = yearPeriods[yearPeriods.length - 1];
+    yEl.textContent = (yy.growth >= 0 ? '+' : '') + fmtK(yy.growth);
+    yEl.className   = 'card-value ' + (yy.growth >= 0 ? 'green' : 'red');
+    const ySub = document.getElementById('c-year-growth-sub');
+    if (ySub) {
+      const pctText = yy.growthPct === null ? '' : ` · ${yy.growthPct >= 0 ? '+' : ''}${yy.growthPct.toFixed(2)}%`;
+      ySub.textContent = yy.label + pctText;
+    }
+    const yIcon = document.getElementById('card-icon-year-growth');
+    if (yIcon) yIcon.className = 'card-icon-wrap ' + (yy.growth >= 0 ? 'green' : 'red');
+  }
+
+  /* ── 13. Average Monthly Growth / Loss (across all months) ── */
+  const avgGrowthEl = document.getElementById('c-avg-growth');
+  if (avgGrowthEl && monthPeriods.length) {
+    const avgGrowth = monthPeriods.reduce((s, p) => s + p.growth, 0) / monthPeriods.length;
+    const pctVals   = monthPeriods.map(p => p.growthPct).filter(v => v !== null);
+    const avgPct    = pctVals.length ? pctVals.reduce((s, v) => s + v, 0) / pctVals.length : null;
+
+    avgGrowthEl.textContent = (avgGrowth >= 0 ? '+' : '') + fmtK(avgGrowth);
+    avgGrowthEl.className   = 'card-value ' + (avgGrowth >= 0 ? 'green' : 'red');
+    const avgSub = document.getElementById('c-avg-growth-sub');
+    if (avgSub) {
+      const pctText = avgPct === null ? '' : ` · ${avgPct >= 0 ? '+' : ''}${avgPct.toFixed(2)}%`;
+      avgSub.textContent = `over ${monthPeriods.length} mo${pctText}`;
+    }
+    const avgIcon = document.getElementById('card-icon-avg-growth');
+    if (avgIcon) avgIcon.className = 'card-icon-wrap ' + (avgGrowth >= 0 ? 'green' : 'red');
+  }
+
+  /* ── 14. Best / Worst Month by % Growth (highest % gain / loss overall) ── */
+  const bestEl  = document.getElementById('c-best-growth');
+  const worstEl = document.getElementById('c-worst-growth');
+  if ((bestEl || worstEl) && monthPeriods.length) {
+    const withPct = monthPeriods.filter(p => p.growthPct !== null);
+    if (withPct.length) {
+      const best  = withPct.reduce((a, b) => (b.growthPct > a.growthPct ? b : a));
+      const worst = withPct.reduce((a, b) => (b.growthPct < a.growthPct ? b : a));
+
+      if (bestEl) {
+        bestEl.textContent = (best.growthPct >= 0 ? '+' : '') + best.growthPct.toFixed(2) + '%';
+        bestEl.className   = 'card-value ' + (best.growthPct >= 0 ? 'green' : 'red');
+        const bestSub = document.getElementById('c-best-growth-sub');
+        if (bestSub) bestSub.textContent = best.label + ` · ${(best.growth >= 0 ? '+' : '') + fmtK(best.growth)}`;
+        const bestIcon = document.getElementById('card-icon-best-growth');
+        if (bestIcon) bestIcon.className = 'card-icon-wrap ' + (best.growthPct >= 0 ? 'green' : 'red');
+      }
+
+      if (worstEl) {
+        worstEl.textContent = (worst.growthPct >= 0 ? '+' : '') + worst.growthPct.toFixed(2) + '%';
+        worstEl.className   = 'card-value ' + (worst.growthPct >= 0 ? 'green' : 'red');
+        const worstSub = document.getElementById('c-worst-growth-sub');
+        if (worstSub) worstSub.textContent = worst.label + ` · ${(worst.growth >= 0 ? '+' : '') + fmtK(worst.growth)}`;
+        const worstIcon = document.getElementById('card-icon-worst-growth');
+        if (worstIcon) worstIcon.className = 'card-icon-wrap ' + (worst.growthPct >= 0 ? 'green' : 'red');
+      }
+    }
+  }
+
   /* ── Donut Chart ── */
   renderDonutChart(last.investedAmount, pnl);
 }
@@ -266,5 +387,15 @@ export function renderAll(entries, settings) {
   renderTable(calc, settings);
   if (document.getElementById('page-graph').classList.contains('active')) {
     renderLineChart(calc);
+    renderGrowthChart(periodGrowth(calc, growthGranularity));
+
+    const monthPeriods = periodGrowth(calc, 'month');
+    populateYearSelects(monthPeriods);
+    const filtered = monthPeriods.filter(p => {
+      const yr = p.period.slice(0, 4);
+      return (!trendYearRange.from || yr >= trendYearRange.from) &&
+             (!trendYearRange.to   || yr <= trendYearRange.to);
+    });
+    renderMonthlyLineChart(filtered);
   }
 }

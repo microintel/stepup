@@ -126,6 +126,50 @@ export function recalcAll(raw, cfg) {
   });
 }
 
+/**
+ * Growth/Loss broken down by month or year.
+ * For each period, growth = change in unrealized P&L (portfolioValue - investedAmount)
+ * from the end of the previous period to the end of this one — i.e. pure market
+ * performance for that period, not counting new SIP money added.
+ *
+ * @param {Array}  calc        output of recalcAll()
+ * @param {'month'|'year'} granularity
+ * @returns {Array<{ period, label, pnl, invested, value, growth }>}
+ */
+export function periodGrowth(calc, granularity) {
+  if (!calc || !calc.length) return [];
+  const keyFor = e => (granularity === 'year' ? e.date.slice(0, 4) : e.date.slice(0, 7));
+
+  const lastByPeriod = new Map();
+  for (const e of calc) lastByPeriod.set(keyFor(e), e); // sorted asc → last write wins = last entry in period
+
+  const keys = [...lastByPeriod.keys()];
+  let prevPnl = 0, prevValue = 0;
+  return keys.map(k => {
+    const e   = lastByPeriod.get(k);
+    const pnl = e.portfolioValue - e.investedAmount;
+    const growth    = pnl - prevPnl;
+    const growthPct = prevValue > 0 ? (growth / prevValue) * 100 : null;
+    prevPnl   = pnl;
+    prevValue = e.portfolioValue;
+    return {
+      period:   k,
+      label:    granularity === 'year' ? k : formatMonthLabel(k),
+      pnl,
+      invested: e.investedAmount,
+      value:    e.portfolioValue,
+      growth,
+      growthPct,
+    };
+  });
+}
+
+function formatMonthLabel(ym) {
+  const [y, m] = ym.split('-');
+  const d = new Date(Number(y), Number(m) - 1, 1);
+  return d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+}
+
 /** Persist the recalculated values back to IndexedDB. */
 export async function saveCalcEntries(calc, profileId) {
   for (const e of calc) {

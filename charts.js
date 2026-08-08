@@ -309,6 +309,123 @@ export function renderDonutChart(invested, pnl) {
 }
 
 /* ══════════════════════════════════════════════════════
+   Growth / Loss Bar Chart (Monthly or Yearly)
+══════════════════════════════════════════════════════ */
+export function renderGrowthChart(periods) {
+  const canvas = document.getElementById('chart-growth');
+  if (!canvas) return;
+  const muted = themeColor('--muted');
+
+  const labels = periods.map(p => p.label);
+  const values = periods.map(p => +p.growth.toFixed(2));
+  const pcts   = periods.map(p => p.growthPct);
+  const colors = values.map(v => (v >= 0 ? '#00c853' : '#ff5252'));
+
+  makeChart('chart-growth', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label:            'Growth / Loss',
+        data:             values,
+        backgroundColor:  colors,
+        borderRadius:     4,
+        maxBarThickness:  36,
+      }],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      interaction:         { intersect: false, mode: 'index' },
+      plugins: {
+        legend:  { display: false },
+        tooltip: {
+          ...getTooltipStyle(),
+          callbacks: {
+            label: c => {
+              const pct = pcts[c.dataIndex];
+              const pctText = pct === null || pct === undefined ? '' : ` (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+              return ` ${c.parsed.y >= 0 ? '+' : ''}${fmtK(c.parsed.y)}${pctText}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: muted, font: { size: 10 } }, grid: { display: false } },
+        y: {
+          ticks: { color: muted, font: { size: 10 }, callback: v => fmtK(v) },
+          grid:  { color: 'rgba(125,133,144,.12)' },
+        },
+      },
+    },
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   Monthly Trend Line Chart — Portfolio Value vs Invested,
+   one point per month (month-end values)
+══════════════════════════════════════════════════════ */
+export function renderMonthlyLineChart(periods) {
+  const canvas = document.getElementById('chart-monthly-line');
+  if (!canvas) return;
+  const muted = themeColor('--muted');
+
+  const labels   = periods.map(p => p.label);
+  const values   = periods.map(p => p.value);
+  const invested = periods.map(p => p.invested);
+  const positive = values.length && values[values.length - 1] >= invested[invested.length - 1];
+
+  makeChart('chart-monthly-line', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label:            'Portfolio Value',
+          data:             values,
+          borderColor:      positive ? '#00c853' : '#ff5252',
+          backgroundColor:  positive ? 'rgba(0,200,83,.15)' : 'rgba(255,82,82,.15)',
+          borderWidth:      3,
+          tension:          0.35,
+          pointRadius:      3,
+          pointHoverRadius: 6,
+          fill:             true,
+        },
+        {
+          label:            'Invested',
+          data:             invested,
+          borderColor:      '#7d8590',
+          borderDash:       [6, 4],
+          borderWidth:      1.5,
+          tension:          0,
+          pointRadius:      0,
+          fill:             false,
+        },
+      ],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      interaction:         { intersect: false, mode: 'index' },
+      plugins: {
+        legend:  { labels: { color: muted, font: { size: 11 } } },
+        tooltip: {
+          ...getTooltipStyle(),
+          callbacks: { label: c => ` ${c.dataset.label}: ${fmtK(c.parsed.y)}` },
+        },
+      },
+      scales: {
+        x: { ticks: { color: muted, font: { size: 10 } }, grid: { display: false } },
+        y: {
+          ticks: { color: muted, font: { size: 10 }, callback: v => fmtK(v) },
+          grid:  { color: 'rgba(125,133,144,.12)' },
+        },
+      },
+    },
+  });
+}
+
+/* ══════════════════════════════════════════════════════
    Draggable / Resizable Navigator Selection Box
 ══════════════════════════════════════════════════════ */
 export function wireSelectionDrag() {

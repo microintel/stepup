@@ -134,6 +134,36 @@
         <div class="card-label">Days Active</div>
         <div class="card-value blue" id="c-days">0</div>
       </div>
+      <div class="card">
+        <div class="card-icon-wrap" id="card-icon-month-growth"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="card-label">Monthly Growth / Loss</div>
+        <div class="card-value" id="c-month-growth">—</div>
+        <div class="card-sub" id="c-month-growth-sub"></div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap" id="card-icon-year-growth"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="card-label">Yearly Growth / Loss</div>
+        <div class="card-value" id="c-year-growth">—</div>
+        <div class="card-sub" id="c-year-growth-sub"></div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap" id="card-icon-avg-growth"><i class="bi bi-bar-chart-steps"></i></div>
+        <div class="card-label">Avg Monthly Growth / Loss</div>
+        <div class="card-value" id="c-avg-growth">—</div>
+        <div class="card-sub" id="c-avg-growth-sub"></div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap" id="card-icon-best-growth"><i class="bi bi-trophy"></i></div>
+        <div class="card-label">Best Month (%)</div>
+        <div class="card-value" id="c-best-growth">—</div>
+        <div class="card-sub" id="c-best-growth-sub"></div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap" id="card-icon-worst-growth"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="card-label">Worst Month (%)</div>
+        <div class="card-value" id="c-worst-growth">—</div>
+        <div class="card-sub" id="c-worst-growth-sub"></div>
+      </div>
     </div>
 
   </div>
@@ -283,6 +313,33 @@
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chart-line"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="chart-panel active" style="padding:14px 16px;">
+        <div class="chart-header">
+          <h2 style="font-size:.95rem;margin:0;"><i class="bi bi-bar-chart-fill section-icon"></i> Growth / Loss</h2>
+          <div class="range-pills" id="growth-toggle">
+            <button class="range-pill active" data-granularity="month">Monthly</button>
+            <button class="range-pill" data-granularity="year">Yearly</button>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="chart-growth"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="chart-panel active" style="padding:14px 16px;">
+        <div class="chart-header">
+          <h2 style="font-size:.95rem;margin:0;"><i class="bi bi-graph-up section-icon"></i> Monthly Trend</h2>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="trend-year-from" class="year-select"></select>
+            <span class="year-range-label">to</span>
+            <select id="trend-year-to" class="year-select"></select>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="chart-monthly-line"></canvas></div>
       </div>
     </div>
   </div>
