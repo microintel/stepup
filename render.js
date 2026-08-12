@@ -2,7 +2,7 @@
    render.js — Dashboard cards, history table, user page
 ══════════════════════════════════════════════════════ */
 
-import { fmtK, fmtPct } from './helpers.js';
+import { fmtK, fmtPct, todayStr } from './helpers.js';
 import { recalcAll, periodGrowth } from './calc.js';
 import { renderLineChart, getActiveRange, renderDonutChart, renderGrowthChart, renderMonthlyLineChart } from './charts.js';
 
@@ -77,7 +77,7 @@ export function renderDashboard(calc, settings) {
   if (!calc.length || !settings) {
     ['c-invested','c-value','c-pnl','c-ret','c-sips',
      'c-xirr','c-days','c-next-sip','c-streak','c-avg-day',
-     'c-month-growth','c-year-growth','c-avg-growth'].forEach(id => {
+     'c-month-growth','c-year-growth','c-avg-growth','c-today-pnl'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.className = 'card-value' +
@@ -103,6 +103,14 @@ export function renderDashboard(calc, settings) {
     if (sub) sub.textContent = '';
     const nextSub = document.getElementById('c-next-sip-sub');
     if (nextSub) nextSub.textContent = '';
+    const todaySub = document.getElementById('c-today-pnl-sub');
+    if (todaySub) todaySub.textContent = '';
+    const todayIcon = document.getElementById('card-icon-today');
+    if (todayIcon) todayIcon.className = 'card-icon-wrap';
+    const updownBody = document.getElementById('updown-body');
+    if (updownBody) updownBody.innerHTML = `<tr><td colspan="3"><div class="empty"><i class="bi bi-inbox"></i><span>No entries yet.</span></div></td></tr>`;
+    const updownBadge = document.getElementById('updown-total-badge');
+    if (updownBadge) updownBadge.textContent = '';
     renderDonutChart(0, 0);
     return;
   }
@@ -134,6 +142,31 @@ export function renderDashboard(calc, settings) {
   const rEl = document.getElementById('c-ret');
   rEl.textContent = fmtPct(ret);
   rEl.className   = 'card-value ' + (ret >= 0 ? 'green' : 'red');
+
+  /* ── 4b. Today's Growth / Loss ── */
+  const todayEl    = document.getElementById('c-today-pnl');
+  const todaySubEl = document.getElementById('c-today-pnl-sub');
+  const todayIcon  = document.getElementById('card-icon-today');
+  if (todayEl) {
+    const todayDate = todayStr();
+    let idx = calc.findIndex(e => e.date === todayDate);
+    const isLive = idx !== -1;
+    if (!isLive) idx = calc.length - 1;   // fall back to most recent entry
+    const entry = calc[idx];
+    const chg   = entry.percentChange;
+    const prev  = idx > 0 ? calc[idx - 1] : null;
+    const amtChange = prev ? entry.portfolioValue - prev.portfolioValue : entry.portfolioValue;
+
+    todayEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+    todayEl.className   = 'card-value ' + (chg >= 0 ? 'green' : 'red');
+
+    if (todaySubEl) {
+      const dLabel = new Date(entry.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      const amtText = (amtChange >= 0 ? '+' : '') + fmtK(amtChange);
+      todaySubEl.textContent = (isLive ? 'Today' : `As of ${dLabel}`) + ` · ${amtText}`;
+    }
+    if (todayIcon) todayIcon.className = 'card-icon-wrap ' + (chg >= 0 ? 'green' : 'red');
+  }
 
   /* ── 5. SIP Contributions ── */
   document.getElementById('c-sips').textContent = sips;
@@ -299,6 +332,33 @@ export function renderDashboard(calc, settings) {
       }
     }
   }
+
+  /* ── 15. Up vs Down Days Table ── */
+  const updownBody  = document.getElementById('updown-body');
+  const updownBadge = document.getElementById('updown-total-badge');
+  if (updownBody) {
+    const up   = calc.filter(e => e.percentChange > 0).length;
+    const down = calc.filter(e => e.percentChange < 0).length;
+    const flat = calc.length - up - down;
+    const pctOf = n => calc.length ? ((n / calc.length) * 100) : 0;
+
+    const rows = [
+      { label: 'Up Days',   icon: 'bi-arrow-up-circle-fill',   count: up,   cls: 'up',   text: 'pct-up' },
+      { label: 'Down Days', icon: 'bi-arrow-down-circle-fill', count: down, cls: 'down', text: 'pct-down' },
+    ];
+    if (flat > 0) rows.push({ label: 'Flat Days', icon: 'bi-dash-circle', count: flat, cls: '', text: '' });
+
+    updownBody.innerHTML = rows.map(r => {
+      const pct = pctOf(r.count);
+      const bar = r.cls ? `<span class="updown-bar-wrap"><span class="updown-bar ${r.cls}" style="width:${pct.toFixed(1)}%"></span></span>` : '';
+      return `<tr>
+        <td><span class="updown-type ${r.text}"><i class="bi ${r.icon}"></i> ${r.label}</span></td>
+        <td class="mono ${r.text}">${r.count}</td>
+        <td class="mono" style="text-align:right;">${bar} ${pct.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+  }
+  if (updownBadge) updownBadge.textContent = calc.length ? `${calc.length} days` : '';
 
   /* ── Donut Chart ── */
   renderDonutChart(last.investedAmount, pnl);

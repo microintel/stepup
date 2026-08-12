@@ -18,6 +18,10 @@ import {
   setHistorySortDir, setHistorySearchDate, setGrowthGranularity,
   setMonthlyTrendYearRange,
 } from './render.js';
+import {
+  readFileAsJson, parseFundFile, buildEntriesFromNavHistory,
+  fetchSchemeFromMfapi, buildSyncDelta,
+} from './fund-sync.js';
 
 /* ══════════════════════════════════════════════════════
    App State
@@ -73,10 +77,12 @@ async function switchProfile(id) {
   renderProfileSwitcher();
   renderScheduleList();
   renderSkipList();
+  renderFundLinkStatus();
   if (document.getElementById('page-user').classList.contains('active')) {
     renderUserPage(entries, settings);
     renderManageSipsSection();
   }
+  syncLinkedFund({ silent: true });
 }
 
 async function createProfile(name) {
@@ -262,7 +268,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
       renderSkipList();
       renderManageSipsSection();
     }
-    if (btn.dataset.page === 'page-add')     initHelper();
+    if (btn.dataset.page === 'page-add')     { initHelper(); renderFundLinkStatus(); }
   });
 });
 
@@ -363,6 +369,15 @@ function currentSipAmount() {
 }
 
 function applySettingsToUI() {
+  // Fund-link card UI is per-profile — always reset it to THIS profile's
+  // state on load/switch, never inherit a value left over from another SIP.
+  // Runs even when this profile has no settings yet, so a brand-new SIP
+  // never shows a previous profile's leftover date/file.
+  const fundStart = document.getElementById('fund-sip-start');
+  if (fundStart) fundStart.value = (settings && !settings.linkedFund) ? (settings.startDate || '') : '';
+  const fundFile = document.getElementById('fund-json-file');
+  if (fundFile) fundFile.value = '';
+
   if (!settings) return;
   const amt = currentSipAmount();
   document.getElementById('sip-amount').value          = amt;
@@ -646,6 +661,134 @@ document.getElementById('btn-add-entry').addEventListener('click', async () => {
   renderAll(entries, settings);
   toast(`Entry added for ${dateVal} ✓`);
 });
+
+/* ══════════════════════════════════════════════════════
+   Link a Fund — import NAV history, then auto-sync via mfapi.in
+══════════════════════════════════════════════════════ */
+function renderFundLinkStatus() {
+  const statusEl = document.getElementById('fund-link-status');
+  const syncBtn  = document.getElementById('btn-sync-fund');
+  if (!statusEl) return;
+  const lf = settings && settings.linkedFund;
+  if (!lf) {
+    statusEl.textContent = 'No fund linked yet — pick a NAV file and your SIP start date.';
+    if (syncBtn) syncBtn.style.display = 'none';
+    return;
+  }
+  statusEl.innerHTML = `Linked: <strong>${lf.schemeName || lf.schemeCode}</strong>` +
+    (lf.fundHouse ? ` · ${lf.fundHouse}` : '') +
+    (lf.lastSync ? ` · last synced ${lf.lastSync}` : '');
+  if (syncBtn) syncBtn.style.display = '';
+}
+
+const _btnGetFundData = document.getElementById('btn-get-fund-data');
+if (_btnGetFundData) {
+  _btnGetFundData.addEventListener('click', () => {
+    window.open('https://microintel.github.io/invisible-house/', '_blank', 'noopener,noreferrer');
+  });
+}
+
+document.getElementById('btn-import-fund').addEventListener('click', async () => {
+  if (!activeProfile) { toast('No active SIP profile.'); return; }
+  const fileInput = document.getElementById('fund-json-file');
+  const startDate = document.getElementById('fund-sip-start').value;
+  const file = fileInput.files && fileInput.files[0];
+  if (!file)      { toast('Choose the fund NAV file.'); return; }
+  if (!startDate) { toast('Enter the SIP start date.'); return; }
+
+  const amt = currentSipAmount() || parseFloat(document.getElementById('sip-amount').value) || 0;
+  if (!amt) { toast('Set the monthly SIP amount in SIP Settings first.'); return; }
+
+  try {
+    const json = await readFileAsJson(file);
+    const fund = parseFundFile(json);
+    if (!fund.schemeCode || !fund.navHistory.length) {
+      toast("That file doesn't look like a fund NAV export."); return;
+    }
+
+    const built = buildEntriesFromNavHistory(fund.navHistory, startDate);
+    if (!built.length) { toast('No NAV data on/after that start date.'); return; }
+
+    if (entries.length && !confirm(
+      `This replaces the ${entries.length} existing entries for this SIP with ${built.length} imported from ${fund.schemeName || fund.schemeCode}. Continue?`
+    )) return;
+
+    await dbClearEntries(activeProfile.id);
+    for (const e of built) {
+      await dbPutEntry(activeProfile.id, { date: e.date, percentChange: e.percentChange, portfolioValue: 0, investedAmount: 0 });
+    }
+
+    settings = {
+      id: activeProfile.id,
+      startDate,
+      sipAmount: amt,
+      sipSchedule: [{ fromDate: startDate, amount: amt }],
+      skippedSipDates: settings ? (settings.skippedSipDates || []) : [],
+      linkedFund: {
+        schemeCode: fund.schemeCode,
+        schemeName: fund.schemeName,
+        fundHouse:  fund.fundHouse,
+        lastSync:   built[built.length - 1].date,
+      },
+    };
+    normalizeSettings(settings);
+    await dbPutSettings(activeProfile.id, settings);
+
+    entries = await dbGetEntries(activeProfile.id);
+    entries.sort((a, b) => a.date.localeCompare(b.date));
+    await saveCalcEntries(recalcAll(entries, settings), activeProfile.id);
+    entries = await dbGetEntries(activeProfile.id);
+    entries.sort((a, b) => a.date.localeCompare(b.date));
+
+    applySettingsToUI();
+    renderFundLinkStatus();
+    renderAll(entries, settings);
+    fileInput.value = '';
+    toast(`Linked ${fund.schemeName || fund.schemeCode} — ${built.length} entries imported ✓`);
+  } catch (err) {
+    console.error(err);
+    toast("Could not read that file — check it's valid fund JSON.");
+  }
+});
+
+async function syncLinkedFund({ silent = false } = {}) {
+  if (!activeProfile || !settings || !settings.linkedFund || !entries.length) return;
+  try {
+    const fresh = await fetchSchemeFromMfapi(settings.linkedFund.schemeCode);
+    const delta = buildSyncDelta(entries, fresh.navHistory);
+
+    if (delta === null) {
+      if (!silent) toast("Could not match your last entry to mfapi's history — sync it manually.");
+      return;
+    }
+    if (!delta.length) {
+      if (!silent) toast('Already up to date ✓');
+      return;
+    }
+
+    for (const e of delta) {
+      await dbPutEntry(activeProfile.id, { date: e.date, percentChange: e.percentChange, portfolioValue: 0, investedAmount: 0 });
+    }
+    entries = await dbGetEntries(activeProfile.id);
+    entries.sort((a, b) => a.date.localeCompare(b.date));
+    await saveCalcEntries(recalcAll(entries, settings), activeProfile.id);
+    entries = await dbGetEntries(activeProfile.id);
+    entries.sort((a, b) => a.date.localeCompare(b.date));
+
+    settings.linkedFund.schemeName = fresh.schemeName || settings.linkedFund.schemeName;
+    settings.linkedFund.fundHouse  = fresh.fundHouse  || settings.linkedFund.fundHouse;
+    settings.linkedFund.lastSync   = entries[entries.length - 1].date;
+    await dbPutSettings(activeProfile.id, settings);
+
+    renderFundLinkStatus();
+    renderAll(entries, settings);
+    if (!silent) toast(`Synced ${delta.length} new day${delta.length > 1 ? 's' : ''} ✓`);
+  } catch (err) {
+    console.error(err);
+    if (!silent) toast('Sync failed — check your connection.');
+  }
+}
+document.getElementById('btn-sync-fund').addEventListener('click', () => syncLinkedFund());
 
 /* ══════════════════════════════════════════════════════
    Edit Entry
@@ -946,4 +1089,6 @@ document.querySelectorAll('.theme-btn').forEach(btn =>
   renderScheduleList();
   renderSkipList();
   renderProfileSwitcher();
+  renderFundLinkStatus();
+  syncLinkedFund({ silent: true });
 })();
