@@ -80,100 +80,138 @@
     </div>
     </div>
 
-    <!-- Highlight Cards — key metrics, shown first with a distinct hero style -->
-    <div class="hero-cards">
-      <div class="hero-card">
-        <div class="card-icon-wrap blue"><i class="bi bi-wallet2"></i></div>
-        <div class="card-label">Total Invested</div>
-        <div class="card-value blue" id="c-invested">₹0</div>
+    <!-- Statement Hero — single lead panel replaces the old row of hero cards -->
+    <div class="statement-hero">
+      <div class="statement-hero-glow"></div>
+      <div class="statement-eyebrow"><i class="bi bi-bar-chart-fill"></i>Portfolio Value</div>
+      <div class="statement-value-line">
+        <span class="card-value" id="c-value">₹0</span>
       </div>
-      <div class="hero-card">
-        <div class="card-icon-wrap purple"><i class="bi bi-bar-chart-fill"></i></div>
-        <div class="card-label">Portfolio Value</div>
-        <div class="card-value" id="c-value">₹0</div>
+      <div class="statement-delta-line">
+        <span class="card-icon-wrap" id="card-icon-pnl"><i class="bi bi-arrow-up-right-circle-fill"></i></span>
+        <span class="card-value" id="c-pnl">₹0</span>
+        <span class="statement-dot">·</span>
+        <span class="card-value" id="c-ret">0.00%</span>
       </div>
-      <div class="hero-card">
-        <div class="card-icon-wrap" id="card-icon-pnl"><i class="bi bi-arrow-up-right-circle-fill"></i></div>
-        <div class="card-label">Profit / Loss</div>
-        <div class="card-value" id="c-pnl">₹0</div>
-      </div>
-      <div class="hero-card">
-        <div class="card-icon-wrap amber"><i class="bi bi-percent"></i></div>
-        <div class="card-label">Return %</div>
-        <div class="card-value" id="c-ret">0.00%</div>
-      </div>
-      <div class="hero-card">
-        <div class="card-icon-wrap" id="card-icon-today"><i class="bi bi-calendar-date"></i></div>
-        <div class="card-label">Today's Growth / Loss</div>
-        <div class="card-value" id="c-today-pnl">—</div>
-        <div class="card-sub" id="c-today-pnl-sub"></div>
+      <div class="statement-rule"></div>
+      <div class="statement-foot">
+        <div class="statement-foot-item">
+          <span class="statement-foot-label">Invested</span>
+          <span class="card-value blue" id="c-invested">₹0</span>
+        </div>
+        <div class="statement-foot-item statement-today">
+          <span class="card-icon-wrap" id="card-icon-today"><i class="bi bi-calendar-date"></i></span>
+          <div class="statement-today-text">
+            <span class="card-value" id="c-today-pnl">—</span>
+            <span class="card-sub" id="c-today-pnl-sub"></span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Dashboard cards -->
-    <div class="cards">
-      <div class="card">
-        <div class="card-icon-wrap amber"><i class="bi bi-calendar-check"></i></div>
-        <div class="card-label">SIP Contributions</div>
-        <div class="card-value amber" id="c-sips">0</div>
-        <div class="card-sub" id="c-sips-sub"></div>
+    <!-- Ledger groups — replaces the small dashboard card grid -->
+    <div class="ledger-groups">
+
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="bi bi-lightning-charge-fill section-icon"></i>Activity</h2>
+        </div>
+        <div class="section-body ledger">
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap amber"><i class="bi bi-calendar-check"></i></span>SIP Contributions</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value amber" id="c-sips">0</span>
+              <span class="card-sub" id="c-sips-sub"></span>
+            </span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap green"><i class="bi bi-speedometer2"></i></span>XIRR / Annualized</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value"><span class="card-value green" id="c-xirr">—</span></span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap amber"><i class="bi bi-clock-history"></i></span>Next SIP</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value amber" id="c-next-sip">—</span>
+              <span class="card-sub" id="c-next-sip-sub"></span>
+            </span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap green"><i class="bi bi-fire"></i></span>Win Streak</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value"><span class="card-value" id="c-streak">0</span></span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap purple"><i class="bi bi-activity"></i></span>Avg Day</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value"><span class="card-value" id="c-avg-day">—</span></span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap blue"><i class="bi bi-calendar3"></i></span>Days Active</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value"><span class="card-value blue" id="c-days">0</span></span>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-icon-wrap green"><i class="bi bi-speedometer2"></i></div>
-        <div class="card-label">XIRR / Annualized</div>
-        <div class="card-value green" id="c-xirr">—</div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="bi bi-graph-up-arrow section-icon"></i>Growth</h2>
+        </div>
+        <div class="section-body ledger">
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap" id="card-icon-month-growth"><i class="bi bi-graph-up-arrow"></i></span>Monthly Growth / Loss</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value" id="c-month-growth">—</span>
+              <span class="card-sub" id="c-month-growth-sub"></span>
+            </span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap" id="card-icon-year-growth"><i class="bi bi-graph-up-arrow"></i></span>Yearly Growth / Loss</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value" id="c-year-growth">—</span>
+              <span class="card-sub" id="c-year-growth-sub"></span>
+            </span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap" id="card-icon-avg-growth"><i class="bi bi-bar-chart-steps"></i></span>Avg Monthly Growth / Loss</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value" id="c-avg-growth">—</span>
+              <span class="card-sub" id="c-avg-growth-sub"></span>
+            </span>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-icon-wrap amber"><i class="bi bi-clock-history"></i></div>
-        <div class="card-label">Next SIP</div>
-        <div class="card-value amber" id="c-next-sip">—</div>
-        <div class="card-sub" id="c-next-sip-sub"></div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2><i class="bi bi-trophy section-icon"></i>Extremes</h2>
+        </div>
+        <div class="section-body ledger">
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap" id="card-icon-best-growth"><i class="bi bi-trophy"></i></span>Best Month (%)</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value" id="c-best-growth">—</span>
+              <span class="card-sub" id="c-best-growth-sub"></span>
+            </span>
+          </div>
+          <div class="ledger-row">
+            <span class="ledger-label"><span class="card-icon-wrap" id="card-icon-worst-growth"><i class="bi bi-exclamation-triangle"></i></span>Worst Month (%)</span>
+            <span class="ledger-leader"></span>
+            <span class="ledger-value">
+              <span class="card-value" id="c-worst-growth">—</span>
+              <span class="card-sub" id="c-worst-growth-sub"></span>
+            </span>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-icon-wrap green"><i class="bi bi-fire"></i></div>
-        <div class="card-label">Win Streak</div>
-        <div class="card-value" id="c-streak">0</div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap purple"><i class="bi bi-activity"></i></div>
-        <div class="card-label">Avg Day</div>
-        <div class="card-value" id="c-avg-day">—</div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap blue"><i class="bi bi-calendar3"></i></div>
-        <div class="card-label">Days Active</div>
-        <div class="card-value blue" id="c-days">0</div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap" id="card-icon-month-growth"><i class="bi bi-graph-up-arrow"></i></div>
-        <div class="card-label">Monthly Growth / Loss</div>
-        <div class="card-value" id="c-month-growth">—</div>
-        <div class="card-sub" id="c-month-growth-sub"></div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap" id="card-icon-year-growth"><i class="bi bi-graph-up-arrow"></i></div>
-        <div class="card-label">Yearly Growth / Loss</div>
-        <div class="card-value" id="c-year-growth">—</div>
-        <div class="card-sub" id="c-year-growth-sub"></div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap" id="card-icon-avg-growth"><i class="bi bi-bar-chart-steps"></i></div>
-        <div class="card-label">Avg Monthly Growth / Loss</div>
-        <div class="card-value" id="c-avg-growth">—</div>
-        <div class="card-sub" id="c-avg-growth-sub"></div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap" id="card-icon-best-growth"><i class="bi bi-trophy"></i></div>
-        <div class="card-label">Best Month (%)</div>
-        <div class="card-value" id="c-best-growth">—</div>
-        <div class="card-sub" id="c-best-growth-sub"></div>
-      </div>
-      <div class="card">
-        <div class="card-icon-wrap" id="card-icon-worst-growth"><i class="bi bi-exclamation-triangle"></i></div>
-        <div class="card-label">Worst Month (%)</div>
-        <div class="card-value" id="c-worst-growth">—</div>
-        <div class="card-sub" id="c-worst-growth-sub"></div>
-      </div>
+
     </div>
 
     <!-- Up vs Down Days -->

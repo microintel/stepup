@@ -17,6 +17,16 @@ export function setGrowthGranularity(val)  { growthGranularity = val; }
 export function setMonthlyTrendYearRange(from, to) { trendYearRange = { from, to }; }
 
 /**
+ * Feeds each dashboard/hero card value & sub-line its own character length
+ * as a CSS custom property, so style.css can shrink the font responsively
+ * as numbers grow longer instead of overflowing or wrapping badly.
+ */
+function fitCardValueLengths() {
+  document.querySelectorAll('#page-home .card-value, #page-home .card-sub')
+    .forEach(el => el.style.setProperty('--vlen', el.textContent.length));
+}
+
+/**
  * Fill the "From Year" / "To Year" selects on the Monthly Trend panel.
  * Preserves the user's current selection across re-renders; only resets
  * to the full range when the set of available years actually changes.
@@ -112,6 +122,7 @@ export function renderDashboard(calc, settings) {
     const updownBadge = document.getElementById('updown-total-badge');
     if (updownBadge) updownBadge.textContent = '';
     renderDonutChart(0, 0);
+    fitCardValueLengths();
     return;
   }
 
@@ -362,6 +373,8 @@ export function renderDashboard(calc, settings) {
 
   /* ── Donut Chart ── */
   renderDonutChart(last.investedAmount, pnl);
+
+  fitCardValueLengths();
 }
 
 /* ══════════════════════════════════════════════════════

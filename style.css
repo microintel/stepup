@@ -332,138 +332,143 @@ html[data-theme="light"] .bottom-nav {
 .btn-icon:hover { color: var(--text); }
 
 /* ══════════════════════════════════════════════════════
-   Hero / Highlight Cards — key metrics shown first
+   Statement Hero — one lead panel, not a grid of tiles.
+   The portfolio value is the thesis of the page; everything
+   else is a supporting line underneath it.
 ══════════════════════════════════════════════════════ */
-.hero-cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
-}
-@media (min-width: 540px) { .hero-cards { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 860px) { .hero-cards { grid-template-columns: repeat(5, 1fr); } }
-
-.hero-card {
+.statement-hero {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius);
-  padding: 20px 18px 18px;
+  padding: 26px 24px 22px;
+  margin-bottom: 14px;
   background: linear-gradient(160deg, var(--surface2) 0%, var(--surface) 100%);
   border: 1px solid var(--border2);
-  box-shadow: 0 8px 22px rgba(0,0,0,.18);
-  transition: transform .22s var(--ease), box-shadow .22s, border-color .22s;
+  box-shadow: 0 10px 28px rgba(0,0,0,.2);
   animation: cardIn .4s var(--ease) both;
 }
-
-html[data-theme="light"] .hero-card {
+html[data-theme="light"] .statement-hero {
   background: linear-gradient(160deg, #fff 0%, var(--surface2) 100%);
   box-shadow: 0 8px 18px rgba(0,0,0,.06);
 }
 
-.hero-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(0,0,0,.24);
-  border-color: var(--border2);
-}
-
-/* soft corner glow */
-.hero-card::after {
-  content: '';
-  position: absolute; top: -55%; right: -25%;
-  width: 150px; height: 150px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,.07), transparent 70%);
+/* ambient glow orb, tinted by the brand gradient */
+.statement-hero-glow {
+  position: absolute; top: -60%; right: -20%;
+  width: 320px; height: 320px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(224,48,48,.14), rgba(34,197,94,.1) 55%, transparent 75%);
   pointer-events: none;
 }
 
-/* thicker glowing top accent, gradient fade */
-.hero-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: var(--border2);
-  transition: background .2s;
+.statement-eyebrow {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); position: relative; z-index: 1;
 }
-.hero-card:has(.card-value.green)::before  { background: linear-gradient(90deg, var(--green), transparent 85%);  box-shadow: 0 0 10px var(--green); }
-.hero-card:has(.card-value.red)::before    { background: linear-gradient(90deg, var(--red), transparent 85%);    box-shadow: 0 0 10px var(--red); }
-.hero-card:has(.card-value.amber)::before  { background: linear-gradient(90deg, var(--amber), transparent 85%);  box-shadow: 0 0 10px var(--amber); }
-.hero-card:has(.card-value.blue)::before   { background: linear-gradient(90deg, var(--blue), transparent 85%);   box-shadow: 0 0 10px var(--blue); }
-.hero-card:has(.card-value.purple)::before { background: linear-gradient(90deg, var(--purple), transparent 85%); box-shadow: 0 0 10px var(--purple); }
+.statement-eyebrow .bi { color: var(--indigo); font-size: .8rem; }
 
-.hero-card .card-icon-wrap {
-  width: 42px; height: 42px; border-radius: 12px;
-  font-size: 1.1rem; margin-bottom: 16px;
+.statement-value-line {
+  position: relative; z-index: 1;
+  margin-top: 10px;
 }
-.hero-card:hover .card-icon-wrap { transform: scale(1.12); }
-
-.hero-card .card-label {
-  font-size: .68rem; margin-bottom: 8px;
+.statement-value-line .card-value {
+  font-size: clamp(2rem, calc(3.4rem - 0.09rem * var(--vlen, 8)), 3.4rem);
+  font-weight: 800; letter-spacing: -.02em; line-height: 1.05;
 }
 
-.hero-card .card-value {
-  font-size: 1.6rem; font-weight: 800; letter-spacing: -.01em;
+.statement-delta-line {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px; flex-wrap: wrap;
+}
+.statement-delta-line .card-icon-wrap {
+  width: 24px; height: 24px; border-radius: 8px;
+  font-size: .7rem; margin-bottom: 0;
+}
+.statement-delta-line .card-value {
+  font-size: clamp(0.85rem, calc(1.15rem - 0.02rem * var(--vlen, 8)), 1.15rem);
+  font-weight: 700;
+}
+.statement-dot { color: var(--muted); font-weight: 700; }
+
+.statement-rule {
+  height: 1px; margin: 18px 0 14px;
+  background: linear-gradient(90deg, var(--border2), transparent 85%);
+  position: relative; z-index: 1;
 }
 
-.hero-card .card-sub { font-size: .68rem; margin-top: 6px; }
+.statement-foot {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.statement-foot-item { display: flex; flex-direction: column; gap: 4px; }
+.statement-foot-label {
+  font-size: .6rem; color: var(--muted);
+  letter-spacing: .08em; text-transform: uppercase; font-weight: 700;
+}
+.statement-foot-item .card-value { font-size: .95rem; font-weight: 700; }
 
-.hero-cards .hero-card:nth-child(1) { animation-delay: .03s; }
-.hero-cards .hero-card:nth-child(2) { animation-delay: .06s; }
-.hero-cards .hero-card:nth-child(3) { animation-delay: .09s; }
-.hero-cards .hero-card:nth-child(4) { animation-delay: .12s; }
-.hero-cards .hero-card:nth-child(5) { animation-delay: .15s; }
+.statement-today { flex-direction: row; align-items: center; gap: 10px; }
+.statement-today .card-icon-wrap { width: 30px; height: 30px; border-radius: 9px; margin-bottom: 0; }
+.statement-today-text { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.statement-today-text .card-value { font-size: .95rem; text-align: right; }
+.statement-today-text .card-sub { font-size: .62rem; text-align: right; }
 
 /* ══════════════════════════════════════════════════════
-   Dashboard Cards
+   Ledger Groups — statement-style rows replace the small
+   metric tiles. Each group reuses the app's existing
+   .section panel so it reads as one family with the rest
+   of the page, not a bolted-on new component.
 ══════════════════════════════════════════════════════ */
-.cards {
+.ledger-groups {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px; margin-bottom: 16px;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+@media (min-width: 760px) {
+  .ledger-groups { grid-template-columns: 1.3fr 1fr; }
+  .ledger-groups .section:nth-child(1) { grid-row: 1 / 3; }
 }
 
-@media (min-width: 540px)  { .cards { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 860px)  { .cards { grid-template-columns: repeat(5, 1fr); } }
+.section-body.ledger { padding: 4px 18px 6px; }
 
-.card {
-  background: rgba(15,20,36,.75);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 15px 14px 14px;
-  position: relative; overflow: hidden;
-  transition: transform .22s var(--ease), box-shadow .22s, border-color .22s;
-  animation: cardIn .35s var(--ease) both;
+.ledger-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  animation: cardIn .3s var(--ease) both;
+}
+.ledger-row:last-child { border-bottom: none; }
+
+.ledger-label {
+  display: flex; align-items: center; gap: 9px;
+  font-size: .76rem; font-weight: 600; color: var(--text2);
+  white-space: nowrap; flex-shrink: 0;
+}
+.ledger-label .card-icon-wrap {
+  width: 22px; height: 22px; border-radius: 7px;
+  font-size: .66rem; margin-bottom: 0; flex-shrink: 0;
 }
 
-html[data-theme="light"] .card {
-  background: rgba(255,255,255,.8);
+.ledger-leader {
+  flex: 1; min-width: 12px;
+  border-bottom: 2px dotted var(--border2);
+  margin-bottom: 5px;
 }
 
-.card::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, transparent 60%);
-  pointer-events: none;
+.ledger-value {
+  display: flex; flex-direction: column; align-items: flex-end;
+  text-align: right; flex-shrink: 0; gap: 2px;
 }
+.ledger-value .card-value { font-size: .88rem; }
+.ledger-value .card-sub { margin-top: 0; }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,.12);
-  border-color: var(--border2);
-}
-
-/* Colored top accent bar */
-.card::before {
-  content: '';
-  position: absolute; top: 0; left: 16px; right: 16px; height: 2px;
-  border-radius: 0 0 2px 2px;
-  background: var(--border);
-  transition: background .2s;
-}
-.card:has(.card-value.green)::before  { background: var(--green); box-shadow: 0 0 4px var(--green); }
-.card:has(.card-value.red)::before    { background: var(--red); box-shadow: 0 0 4px var(--red); }
-.card:has(.card-value.amber)::before  { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
-.card:has(.card-value.blue)::before   { background: var(--blue); box-shadow: 0 0 4px var(--blue); }
-.card:has(.card-value.purple)::before { background: var(--purple); box-shadow: 0 0 4px var(--purple); }
-
-/* Card icon */
+/* Card icon (shared by hero panel + ledger rows; JS toggles color classes) */
 .card-icon-wrap {
   width: 30px; height: 30px;
   border-radius: 8px;
@@ -472,23 +477,18 @@ html[data-theme="light"] .card {
   background: var(--surface3);
   transition: transform .2s var(--spring);
 }
-.card:hover .card-icon-wrap { transform: scale(1.1); }
-
 .card-icon-wrap.green  { background: var(--green-dim);  color: var(--green); }
 .card-icon-wrap.red    { background: var(--red-dim);    color: var(--red); }
 .card-icon-wrap.amber  { background: var(--amber-dim);  color: var(--amber); }
 .card-icon-wrap.blue   { background: var(--blue-dim);   color: var(--blue); }
 .card-icon-wrap.purple { background: var(--purple-dim); color: var(--purple); }
 
-.card-label {
-  font-size: .6rem; color: var(--muted);
-  letter-spacing: .08em; text-transform: uppercase;
-  margin-bottom: 5px; font-weight: 700;
-}
-
 .card-value {
-  font-family: var(--mono); font-size: 1.05rem;
-  font-weight: 700; line-height: 1.15; color: var(--text);
+  font-family: var(--mono);
+  font-size: clamp(0.68rem, calc(1.25rem - 0.035rem * var(--vlen, 4)), 1.05rem);
+  font-weight: 700; line-height: 1.2; color: var(--text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere; word-break: break-word;
 }
 .card-value.green  { color: var(--green); }
 .card-value.red    { color: var(--red); }
@@ -496,19 +496,10 @@ html[data-theme="light"] .card {
 .card-value.blue   { color: var(--blue); }
 .card-value.purple { color: var(--purple); }
 
-.card-sub { font-size: .62rem; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
-
-/* Card stagger */
-.cards .card:nth-child(1)  { animation-delay: .04s; }
-.cards .card:nth-child(2)  { animation-delay: .07s; }
-.cards .card:nth-child(3)  { animation-delay: .10s; }
-.cards .card:nth-child(4)  { animation-delay: .13s; }
-.cards .card:nth-child(5)  { animation-delay: .16s; }
-.cards .card:nth-child(6)  { animation-delay: .19s; }
-.cards .card:nth-child(7)  { animation-delay: .22s; }
-.cards .card:nth-child(8)  { animation-delay: .25s; }
-.cards .card:nth-child(9)  { animation-delay: .28s; }
-.cards .card:nth-child(10) { animation-delay: .31s; }
+.card-sub {
+  font-size: .62rem; color: var(--muted); margin-top: 3px; font-family: var(--mono);
+  overflow-wrap: anywhere; word-break: break-word; line-height: 1.35;
+}
 
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(14px) scale(.97); }
