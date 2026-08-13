@@ -8,7 +8,7 @@ import { openDB, dbGet, dbPut, dbDel, dbAll, dbClr,
          dbGetEntries, dbPutEntry, dbDelEntry, dbClearEntries,
          dbGetAllProfiles, dbPutProfile, dbDelProfile } from './db.js';
 import { toast, todayStr, dateToStr }                   from './helpers.js';
-import { recalcAll, saveCalcEntries, sipsBetween }       from './calc.js';
+import { recalcAll, saveCalcEntries, sipsBetween, amountForDate } from './calc.js';
 import {
   renderLineChart, applyRangeToMain,
   setActiveRange, wireSelectionDrag,
@@ -422,14 +422,18 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
 });
 
 /* ══════════════════════════════════════════════════════
-   Step-Up SIP
+   Step-Up / Step-Down SIP
 ══════════════════════════════════════════════════════ */
 document.getElementById('btn-add-stepup').addEventListener('click', async () => {
   if (!settings) { toast('Save base SIP settings first.'); return; }
   const newAmt  = parseFloat(document.getElementById('stepup-amount').value);
   const fromDate = document.getElementById('stepup-date').value;
   if (!newAmt || newAmt <= 0 || !fromDate) { toast('Enter a valid new amount and effective date.'); return; }
-  if (fromDate < settings.startDate) { toast('Step-up date cannot be before SIP start date.'); return; }
+  if (fromDate < settings.startDate) { toast('Effective date cannot be before SIP start date.'); return; }
+
+  // Amount that was active immediately before this new entry, so we can
+  // tell the user whether this was a step-up (increase) or step-down (decrease).
+  const priorAmt = amountForDate(settings.sipSchedule, fromDate);
 
   settings.sipSchedule = settings.sipSchedule.filter(s => s.fromDate !== fromDate);
   settings.sipSchedule.push({ fromDate, amount: newAmt });
@@ -447,24 +451,34 @@ document.getElementById('btn-add-stepup').addEventListener('click', async () => 
   entries = await dbGetEntries(activeProfile.id);
   entries.sort((a, b) => a.date.localeCompare(b.date));
   renderAll(entries, settings);
-  toast(`Step-up to ₹${newAmt.toLocaleString('en-IN')} from ${fromDate} ✓`);
+
+  const verb = newAmt > priorAmt ? 'Step-up' : newAmt < priorAmt ? 'Step-down' : 'Amount set';
+  toast(`${verb} to ₹${newAmt.toLocaleString('en-IN')} from ${fromDate} ✓`);
 });
 
 function renderScheduleList() {
   const el = document.getElementById('stepup-schedule-list');
   if (!el || !settings || !settings.sipSchedule) return;
   if (!settings.sipSchedule.length) { el.innerHTML = ''; return; }
-  el.innerHTML = settings.sipSchedule.map((s, i) => `
+  el.innerHTML = settings.sipSchedule.map((s, i) => {
+    const prevAmt = i === 0 ? null : settings.sipSchedule[i - 1].amount;
+    const isDown  = prevAmt !== null && s.amount < prevAmt;
+    const isUp    = prevAmt !== null && s.amount > prevAmt;
+    const arrow   = isDown ? '<i class="bi bi-arrow-down-short" style="color:var(--red)"></i>'
+                  : isUp   ? '<i class="bi bi-arrow-up-short" style="color:var(--green)"></i>'
+                  : '';
+    return `
     <div class="schedule-row">
       <div class="schedule-info">
-        <span class="schedule-amt">₹${s.amount.toLocaleString('en-IN')}</span>
+        <span class="schedule-amt ${isDown ? 'down' : ''}">${arrow}₹${s.amount.toLocaleString('en-IN')}</span>
         <span class="schedule-from">from ${s.fromDate}</span>
       </div>
       ${i === 0
         ? '<span class="schedule-badge">Base</span>'
-        : `<button class="btn-icon schedule-del" data-idx="${i}" title="Remove step-up" style="color:var(--red)">🗑</button>`
+        : `<button class="btn-icon schedule-del" data-idx="${i}" title="Remove this change" style="color:var(--red)">🗑</button>`
       }
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   el.querySelectorAll('.schedule-del').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -479,7 +493,7 @@ function renderScheduleList() {
       entries = await dbGetEntries(activeProfile.id);
       entries.sort((a, b) => a.date.localeCompare(b.date));
       renderAll(entries, settings);
-      toast('Step-up removed ✓');
+      toast('Schedule entry removed ✓');
     });
   });
 }

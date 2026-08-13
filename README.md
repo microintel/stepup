@@ -24,6 +24,7 @@ StepUP addresses this by running entirely in the browser, storing data locally (
 - Calculates monthly and yearly growth/loss (absolute ₹ and %)
 - Surfaces your single best and worst performing months by % — so you instantly know your biggest gain and biggest drawdown
 - Visualizes trends with line and donut charts
+- Supports both **step-up** (increase) and **step-down** (decrease) SIP amounts from any future date, with old entries keeping their original amounts
 - Tracks upcoming SIP dates and lets you log/skip entries
 - Generates a downloadable PDF report of your investment history
 - Works fully offline once loaded — no server, no account, no data leaving your device

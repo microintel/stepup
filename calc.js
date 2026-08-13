@@ -46,7 +46,7 @@ function allSipDates(startStr, endStr) {
  * Given a sipSchedule array (sorted by fromDate asc), return the SIP amount
  * active on a given SIP date string.
  */
-function amountForDate(sipSchedule, dateStr) {
+export function amountForDate(sipSchedule, dateStr) {
   if (!sipSchedule || !sipSchedule.length) return 0;
   let amount = sipSchedule[0].amount;
   for (const seg of sipSchedule) {

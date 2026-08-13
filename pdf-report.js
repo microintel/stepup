@@ -342,20 +342,28 @@ export async function generatePdfReport(entries, settings, fundName) {
     y += 22;
   }
 
-  /* ── Step-up schedule ── */
+  /* ── Step-up / step-down schedule ── */
   if (y > pageH - 100) { doc.addPage(); y = 50; }
   doc.setFont('NotoSans', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(20, 20, 20);
-  doc.text('Step-Up Schedule', margin, y);
+  doc.text('SIP Schedule (Step-Up / Step-Down)', margin, y);
   y += 8;
 
   y = drawTable(doc, {
     startY: y, margin, pageW, pageH,
-    head: ['Effective From', 'Monthly Amount'],
-    rows: schedule.map(s => [s.fromDate, fmt(s.amount)]),
-    widths: [(pageW - margin * 2) * 0.5, (pageW - margin * 2) * 0.5],
-    aligns: ['left', 'right'],
+    head: ['Effective From', 'Monthly Amount', 'Change'],
+    rows: schedule.map((s, i) => {
+      if (i === 0) return [s.fromDate, fmt(s.amount), 'Base'];
+      const prev = schedule[i - 1].amount;
+      const diff = s.amount - prev;
+      const change = diff > 0 ? `▲ Step-Up (+${fmt(diff)})`
+                   : diff < 0 ? `▼ Step-Down (${fmt(diff)})`
+                   : '—';
+      return [s.fromDate, fmt(s.amount), change];
+    }),
+    widths: [(pageW - margin * 2) * 0.32, (pageW - margin * 2) * 0.28, (pageW - margin * 2) * 0.4],
+    aligns: ['left', 'right', 'right'],
   });
   y += 22;
 

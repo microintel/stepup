@@ -135,7 +135,7 @@ html[data-theme="light"] .app-header {
 
 .brand-logo {
   width: 34px; height: 34px;
-  background: linear-gradient(135deg, #e03030 0%, #22c55e 100%);
+  background: var(--indigo);
   border-radius: 10px;
   display: grid; place-items: center;
   color: #fff; font-size: 1rem;
@@ -146,9 +146,7 @@ html[data-theme="light"] .app-header {
 .app-header h1 {
   font-size: 1.08rem; font-weight: 800;
   letter-spacing: -.02em;
-  background: linear-gradient(135deg, var(--indigo), var(--green));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text);
 }
 
 .header-right {
@@ -200,7 +198,7 @@ html[data-theme="light"] .bottom-nav {
   content: '';
   position: absolute; top: 0; left: 50%; transform: translateX(-50%);
   width: 0; height: 2.5px;
-  background: linear-gradient(90deg, var(--indigo), var(--green));
+  background: var(--indigo);
   border-radius: 0 0 3px 3px;
   transition: width .28s var(--spring);
 }
@@ -210,7 +208,7 @@ html[data-theme="light"] .bottom-nav {
 .nav-item-add { color: var(--muted); }
 .nav-add-btn {
   width: 44px; height: 44px;
-  background: linear-gradient(135deg, #e03030, #22c55e);
+  background: var(--indigo);
   border-radius: 14px;
   display: grid; place-items: center;
   color: #fff; font-size: 1.2rem;
@@ -309,11 +307,12 @@ html[data-theme="light"] .bottom-nav {
 .btn:active { transform: scale(.96); }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e03030 0%, #b52222 100%);
+  background: var(--indigo);
   color: #fff;
   box-shadow: 0 2px 8px rgba(224,48,48,.2);
 }
 .btn-primary:hover {
+  background: var(--indigo-soft);
   box-shadow: 0 4px 12px rgba(224,48,48,.3);
   transform: translateY(-1px);
 }
@@ -342,21 +341,22 @@ html[data-theme="light"] .bottom-nav {
   border-radius: var(--radius);
   padding: 26px 24px 22px;
   margin-bottom: 14px;
-  background: linear-gradient(160deg, var(--surface2) 0%, var(--surface) 100%);
+  background: var(--surface2);
   border: 1px solid var(--border2);
   box-shadow: 0 10px 28px rgba(0,0,0,.2);
   animation: cardIn .4s var(--ease) both;
 }
 html[data-theme="light"] .statement-hero {
-  background: linear-gradient(160deg, #fff 0%, var(--surface2) 100%);
+  background: #fff;
   box-shadow: 0 8px 18px rgba(0,0,0,.06);
 }
 
-/* ambient glow orb, tinted by the brand gradient */
+/* thin top accent, single brand tone */
 .statement-hero-glow {
-  position: absolute; top: -60%; right: -20%;
-  width: 320px; height: 320px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(224,48,48,.14), rgba(34,197,94,.1) 55%, transparent 75%);
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--indigo);
+  opacity: .35;
   pointer-events: none;
 }
 
@@ -393,7 +393,7 @@ html[data-theme="light"] .statement-hero {
 
 .statement-rule {
   height: 1px; margin: 18px 0 14px;
-  background: linear-gradient(90deg, var(--border2), transparent 85%);
+  background: var(--border2);
   position: relative; z-index: 1;
 }
 
@@ -570,7 +570,7 @@ html[data-theme="light"] .section { background: rgba(255,255,255,.8); }
 }
 .card-form-icon {
   width: 42px; height: 42px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--indigo-dim), var(--indigo-dim));
+  background: var(--indigo-dim);
   border: 1px solid rgba(224,48,48,.25);
   border-radius: 12px;
   display: grid; place-items: center;
@@ -893,14 +893,14 @@ html[data-theme="light"] .user-section { background: rgba(255,255,255,.9); }
 .theme-btn:hover { border-color: var(--border2); color: var(--text2); }
 
 .theme-btn.active {
-  background: linear-gradient(135deg, #e03030, #b52222);
+  background: var(--indigo);
   color: #fff; border-color: transparent;
   box-shadow: 0 2px 8px rgba(224,48,48,.2);
 }
 
 /* Light theme gets a warm sun tint when active */
 html[data-theme="light"] #theme-btn-light.active {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: var(--amber);
   box-shadow: 0 2px 8px rgba(245,158,11,.2);
 }
 
@@ -1029,15 +1029,14 @@ html[data-theme="light"] .donut-section { background: rgba(255,255,255,.8); }
 .donut-section::before {
   content: '';
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, var(--indigo), var(--green), var(--amber));
+  background: var(--indigo);
 }
 
-/* Subtle glow orb behind donut */
+/* Subtle glow orb behind donut (disabled — flat style) */
 .donut-section::after {
   content: '';
   position: absolute; top: -40px; left: -40px;
   width: 220px; height: 220px;
- // background: radial-gradient(circle, rgba(224,48,48,.08), transparent 70%);
   pointer-events: none;
 }
 
@@ -1216,9 +1215,8 @@ html[data-theme="light"] .donut-section { background: rgba(255,255,255,.8); }
   font-size: .68rem; color: var(--muted); letter-spacing: .04em;
 }
 .app-footer span {
-  background: linear-gradient(90deg, var(--indigo), var(--green));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text; font-weight: 700;
+  color: var(--indigo);
+  font-weight: 700;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1359,7 +1357,7 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .sip-manage-row.sip-manage-active {
   border-color: var(--indigo);
-  background: linear-gradient(135deg, var(--indigo-dim), rgba(34,197,94,.06));
+  background: var(--indigo-dim);
 }
 .sip-manage-left {
   display: flex; flex-direction: column; gap: 2px; min-width: 0;
@@ -1447,7 +1445,11 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: .88rem;
   font-weight: 600;
   color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
+.schedule-amt.down { color: var(--red); }
 .schedule-from {
   font-size: .75rem;
   color: var(--muted);
