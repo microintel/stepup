@@ -426,6 +426,150 @@ export function renderMonthlyLineChart(periods) {
 }
 
 /* ══════════════════════════════════════════════════════
+   Fund Performance History — full NAV life of the linked
+   fund (can span decades), independent of the user's SIP.
+   ₹100 base, day-wise, pinch/pan zoomable like the main chart.
+══════════════════════════════════════════════════════ */
+let fundHistLabels = [];
+
+export function renderFundHistoryChart(series) {
+  const canvas = document.getElementById('chart-fund-history');
+  if (!canvas || !series.length) return;
+
+  fundHistLabels = series.map(e => e.date);
+  const values   = series.map(e => e.growth);
+  const positive = values[values.length - 1] >= values[0];
+  const glow     = positive ? '#00c853' : '#ff5252';
+
+  makeChart('chart-fund-history', {
+    type: 'line',
+    data: {
+      labels: fundHistLabels,
+      datasets: [{
+        label:                 'Fund Growth (₹100 base)',
+        data:                  values,
+        borderColor:           glow,
+        borderWidth:           2.5,
+        tension:               0.3,
+        pointRadius:           0,
+        pointHoverRadius:      5,
+        pointHoverBackgroundColor: glow,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+        fill:                  true,
+        backgroundColor: ctx => {
+          const { ctx: canvas, chartArea } = ctx.chart;
+          if (!chartArea) return null;
+          const gradient = canvas.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          if (positive) {
+            gradient.addColorStop(0, 'rgba(0,200,83,.32)');
+            gradient.addColorStop(1, 'rgba(0,200,83,0)');
+          } else {
+            gradient.addColorStop(0, 'rgba(255,82,82,.32)');
+            gradient.addColorStop(1, 'rgba(255,82,82,0)');
+          }
+          return gradient;
+        },
+      }],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      interaction:         { intersect: false, mode: 'index' },
+      animation:            { duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...getTooltipStyle(),
+          displayColors: false,
+          callbacks: {
+            title: items => items[0] ? new Date(items[0].label).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+            label: c => ` ₹100 invested here → ₹${c.parsed.y.toFixed(2)}`,
+          },
+        },
+        zoom: {
+          pan:  { enabled: true, mode: 'x' },
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            drag:  { enabled: false },
+            mode:  'x',
+          },
+          limits: { x: { min: 0, max: Math.max(fundHistLabels.length - 1, 0), minRange: 20 } },
+        },
+      },
+      scales: { x: { display: false }, y: { display: false } },
+    },
+  });
+
+  lockChartTouch(canvas);
+}
+
+export function resetFundHistoryZoom() {
+  const chart = charts['chart-fund-history'];
+  if (chart) chart.resetZoom();
+}
+
+/* ══════════════════════════════════════════════════════
+   Projected Growth — separate chart, own canvas. Three
+   scenario lines from the fund's own best/avg/worst calendar
+   year, starting at today's last known value.
+══════════════════════════════════════════════════════ */
+let fundProjLabels = [];
+
+export function renderFundProjectionChart(projection) {
+  const canvas = document.getElementById('chart-fund-projection');
+  if (!canvas || !projection) return;
+
+  fundProjLabels = projection.expected.map(p => p.date);
+
+  const line = (points, color, dashLabel) => ({
+    label:            dashLabel,
+    data:             points.map(p => p.value),
+    borderColor:      color,
+    borderWidth:      2.5,
+    borderDash:       [7, 4],
+    tension:          0.25,
+    pointRadius:      0,
+    pointHoverRadius: 5,
+    pointHoverBackgroundColor: color,
+    pointHoverBorderColor: '#fff',
+    pointHoverBorderWidth: 2,
+    fill:             false,
+  });
+
+  makeChart('chart-fund-projection', {
+    type: 'line',
+    data: {
+      labels: fundProjLabels,
+      datasets: [
+        line(projection.optimistic,  '#00c853', 'Optimistic'),
+        line(projection.expected,    '#f5a623', 'Expected'),
+        line(projection.pessimistic, '#ff5252', 'Pessimistic'),
+      ],
+    },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      interaction:         { intersect: false, mode: 'index' },
+      animation:            { duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...getTooltipStyle(),
+          displayColors: true,
+          callbacks: {
+            title: items => items[0] ? new Date(items[0].label).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+            label: c => ` ${c.dataset.label}: ₹${c.parsed.y.toFixed(2)}`,
+          },
+        },
+      },
+      scales: { x: { display: false }, y: { display: false } },
+    },
+  });
+}
+
+/* ══════════════════════════════════════════════════════
    Draggable / Resizable Navigator Selection Box
 ══════════════════════════════════════════════════════ */
 export function wireSelectionDrag() {

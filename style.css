@@ -599,6 +599,22 @@ html[data-theme="light"] .section { background: rgba(255,255,255,.8); }
 .chart-panel { display: none; padding: 16px; }
 .chart-panel.active { display: block; }
 
+/* ── Fund Performance History ── */
+.fund-hist-name {
+  font-size: .78rem; color: var(--muted); margin-bottom: 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fund-hist-stats { margin-top: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.fund-hist-stats .stat-cell { padding: 12px 14px; }
+.fund-proj-legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 4px 2px 2px; }
+.fund-proj-leg-item { display: flex; align-items: center; gap: 7px; }
+.fund-proj-leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.fund-proj-leg-text { font-size: .72rem; color: var(--muted); }
+.fund-proj-leg-text strong { color: var(--text); font-family: var(--mono); font-weight: 700; }
+.fund-proj-note { font-size: .68rem; color: var(--muted); margin-top: 10px; opacity: .8; }
+@keyframes spin-360 { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin-360 1s linear infinite; }
+
 .chart-header {
   display: flex; justify-content: space-between;
   align-items: center; margin-bottom: 12px;

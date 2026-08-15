@@ -436,6 +436,69 @@
       </div>
     </div>
 
+    <div class="section" id="fund-history-section">
+      <div class="chart-panel active" style="padding:14px 16px;">
+        <div class="chart-header">
+          <h2 style="font-size:.95rem;margin:0;"><i class="bi bi-hourglass-split section-icon"></i> Fund Performance History</h2>
+          <button class="btn btn-secondary btn-sm" id="btn-reset-fund-history-zoom" style="display:none;">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </button>
+        </div>
+
+        <div class="empty" id="fund-hist-empty">
+          <i class="bi bi-link-45deg"></i>
+          <span>Link a fund on the Add page to see its full NAV track record — however far back it goes.</span>
+        </div>
+
+        <div id="fund-hist-loading" class="empty" style="display:none;">
+          <i class="bi bi-arrow-repeat spin"></i>
+          <span>Pulling the fund's full NAV history…</span>
+        </div>
+
+        <div id="fund-hist-body" style="display:none;">
+          <div class="fund-hist-name" id="fund-hist-name"></div>
+          <span class="chart-subtitle"><i class="bi bi-info-circle"></i> scroll/pinch to zoom, drag to pan</span>
+          <div class="chart-wrap" style="height:260px;"><canvas id="chart-fund-history"></canvas></div>
+          <div class="stat-grid fund-hist-stats">
+            <div class="stat-cell">
+              <div class="stat-cell-label">Track Record</div>
+              <div class="stat-cell-value" id="fh-years">—</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-cell-label">Since</div>
+              <div class="stat-cell-value" id="fh-since">—</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-cell-label">Total Growth</div>
+              <div class="stat-cell-value" id="fh-total">—</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-cell-label">CAGR</div>
+              <div class="stat-cell-value" id="fh-cagr">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="fund-projection-section" style="display:none;">
+      <div class="chart-panel active" style="padding:14px 16px;">
+        <div class="chart-header">
+          <h2 style="font-size:.95rem;margin:0;"><i class="bi bi-signpost-split section-icon"></i> Projected Growth</h2>
+          <div class="range-pills" id="fund-proj-horizon">
+            <button class="range-pill" data-years="5">5Y</button>
+            <button class="range-pill active" data-years="10">10Y</button>
+            <button class="range-pill" data-years="15">15Y</button>
+            <button class="range-pill" data-years="20">20Y</button>
+          </div>
+        </div>
+        <span class="chart-subtitle"><i class="bi bi-info-circle"></i> continues from today's value, three scenarios</span>
+        <div class="chart-wrap" style="height:260px;"><canvas id="chart-fund-projection"></canvas></div>
+        <div class="fund-proj-legend" id="fund-proj-legend"></div>
+        <div class="fund-proj-note"><i class="bi bi-info-circle"></i> Based on this fund's own best, worst and average calendar-year returns — not a guarantee.</div>
+      </div>
+    </div>
+
     <div class="section">
       <div class="chart-panel active" style="padding:14px 16px;">
         <div class="chart-header">

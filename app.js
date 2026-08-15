@@ -12,6 +12,7 @@ import { recalcAll, saveCalcEntries, sipsBetween, amountForDate } from './calc.j
 import {
   renderLineChart, applyRangeToMain,
   setActiveRange, wireSelectionDrag,
+  renderFundHistoryChart, resetFundHistoryZoom, renderFundProjectionChart,
 } from './charts.js';
 import {
   renderAll, renderTable, renderUserPage,
@@ -20,7 +21,7 @@ import {
 } from './render.js';
 import {
   readFileAsJson, parseFundFile, buildEntriesFromNavHistory,
-  fetchSchemeFromMfapi, buildSyncDelta,
+  fetchSchemeFromMfapi, buildSyncDelta, buildFundGrowthSeries, buildFundProjection,
 } from './fund-sync.js';
 
 /* ══════════════════════════════════════════════════════
@@ -30,6 +31,11 @@ let profiles       = [];   // [{id, name}]
 let activeProfile  = null; // {id, name}
 let settings       = null;
 let entries        = [];
+
+/* Fund's own full NAV history, cached per scheme so the long-range
+   "Fund Performance History" chart doesn't refetch on every visit. */
+let fundHistCache   = { schemeCode: null, data: null };
+let fundProjYears   = 10;
 
 import { generatePdfReport } from './pdf-report.js';
 
@@ -82,6 +88,7 @@ async function switchProfile(id) {
     renderUserPage(entries, settings);
     renderManageSipsSection();
   }
+  if (document.getElementById('page-graph').classList.contains('active')) refreshFundHistorySection();
   syncLinkedFund({ silent: true });
 }
 
@@ -260,7 +267,10 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(btn.dataset.page).classList.add('active');
     syncSwipeDots(btn.dataset.page);
-    if (btn.dataset.page === 'page-graph')   setTimeout(() => renderAll(entries, settings), 50);
+    if (btn.dataset.page === 'page-graph')   {
+      setTimeout(() => renderAll(entries, settings), 50);
+      refreshFundHistorySection();
+    }
     if (btn.dataset.page === 'page-history') renderTable(recalcAll(entries, settings), settings);
     if (btn.dataset.page === 'page-user')    {
       renderUserPage(entries, settings);
@@ -695,6 +705,110 @@ function renderFundLinkStatus() {
   if (syncBtn) syncBtn.style.display = '';
 }
 
+/* ══════════════════════════════════════════════════════
+   Fund Performance History — long-range chart of the linked
+   fund's own NAV life (can span decades), independent of SIP dates
+══════════════════════════════════════════════════════ */
+async function refreshFundHistorySection({ force = false } = {}) {
+  const emptyEl   = document.getElementById('fund-hist-empty');
+  const loadingEl = document.getElementById('fund-hist-loading');
+  const bodyEl    = document.getElementById('fund-hist-body');
+  const resetBtn  = document.getElementById('btn-reset-fund-history-zoom');
+  if (!emptyEl || !loadingEl || !bodyEl) return;
+
+  const lf = settings && settings.linkedFund;
+  if (!lf || !lf.schemeCode) {
+    emptyEl.querySelector('span').textContent =
+      'Link a fund on the Add page to see its full NAV track record — however far back it goes.';
+    emptyEl.style.display = 'flex';
+    loadingEl.style.display = 'none';
+    bodyEl.style.display = 'none';
+    if (resetBtn) resetBtn.style.display = 'none';
+    document.getElementById('fund-projection-section').style.display = 'none';
+    return;
+  }
+
+  if (force || fundHistCache.schemeCode !== lf.schemeCode) {
+    emptyEl.style.display = 'none';
+    bodyEl.style.display = 'none';
+    loadingEl.style.display = 'flex';
+    if (resetBtn) resetBtn.style.display = 'none';
+    try {
+      const fresh = await fetchSchemeFromMfapi(lf.schemeCode);
+      fundHistCache = { schemeCode: lf.schemeCode, data: buildFundGrowthSeries(fresh.navHistory) };
+    } catch (err) {
+      console.error(err);
+      loadingEl.style.display = 'none';
+      emptyEl.style.display = 'flex';
+      emptyEl.querySelector('span').textContent = "Couldn't load this fund's full history right now — try again later.";
+      document.getElementById('fund-projection-section').style.display = 'none';
+      return;
+    }
+  }
+
+  const { series, years, totalGrowthPct, cagrPct } = fundHistCache.data;
+  if (!series.length) {
+    loadingEl.style.display = 'none';
+    emptyEl.style.display = 'flex';
+    document.getElementById('fund-projection-section').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('fund-hist-name').textContent =
+    (lf.schemeName || lf.schemeCode) + (lf.fundHouse ? ` · ${lf.fundHouse}` : '');
+  document.getElementById('fh-years').textContent = years.toFixed(1) + ' yrs';
+  document.getElementById('fh-since').textContent = new Date(series[0].date)
+    .toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  const totalEl = document.getElementById('fh-total');
+  totalEl.textContent = (totalGrowthPct >= 0 ? '+' : '') + totalGrowthPct.toFixed(2) + '%';
+  totalEl.className = 'stat-cell-value ' + (totalGrowthPct >= 0 ? 'green' : 'red');
+  const cagrEl = document.getElementById('fh-cagr');
+  cagrEl.textContent = (cagrPct >= 0 ? '+' : '') + cagrPct.toFixed(2) + '%';
+  cagrEl.className = 'stat-cell-value ' + (cagrPct >= 0 ? 'green' : 'red');
+
+  loadingEl.style.display = 'none';
+  emptyEl.style.display = 'none';
+  bodyEl.style.display = 'block';
+  if (resetBtn) resetBtn.style.display = '';
+
+  renderFundHistoryChart(series);
+  renderFundProjectionSection(series);
+}
+
+function renderFundProjectionSection(series) {
+  const sectionEl = document.getElementById('fund-projection-section');
+  const legendEl  = document.getElementById('fund-proj-legend');
+  const projection = buildFundProjection(series, fundProjYears);
+  if (!sectionEl) return;
+
+  if (!projection) { sectionEl.style.display = 'none'; return; }
+  sectionEl.style.display = '';
+
+  renderFundProjectionChart(projection);
+
+  if (!legendEl) return;
+  const row = (color, label, pct) => `
+    <div class="fund-proj-leg-item">
+      <span class="fund-proj-leg-dot" style="background:${color}"></span>
+      <span class="fund-proj-leg-text">${label}<br><strong>${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%/yr</strong></span>
+    </div>`;
+  legendEl.innerHTML =
+    row('#00c853', 'Optimistic · best year on record', projection.bestPct) +
+    row('#f5a623', 'Expected · average year',          projection.avgPct) +
+    row('#ff5252', 'Pessimistic · worst year on record', projection.worstPct);
+}
+
+document.getElementById('fund-proj-horizon')?.addEventListener('click', e => {
+  const btn = e.target.closest('.range-pill');
+  if (!btn) return;
+  document.querySelectorAll('#fund-proj-horizon .range-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  fundProjYears = parseInt(btn.dataset.years, 10);
+  if (fundHistCache.data) renderFundProjectionSection(fundHistCache.data.series);
+});
+
+document.getElementById('btn-reset-fund-history-zoom')?.addEventListener('click', resetFundHistoryZoom);
+
 const _btnGetFundData = document.getElementById('btn-get-fund-data');
 if (_btnGetFundData) {
   _btnGetFundData.addEventListener('click', () => {
@@ -757,6 +871,8 @@ document.getElementById('btn-import-fund').addEventListener('click', async () =>
     applySettingsToUI();
     renderFundLinkStatus();
     renderAll(entries, settings);
+    fundHistCache = { schemeCode: null, data: null };
+    refreshFundHistorySection();
     fileInput.value = '';
     toast(`Linked ${fund.schemeName || fund.schemeCode} — ${built.length} entries imported ✓`);
   } catch (err) {
@@ -796,6 +912,7 @@ async function syncLinkedFund({ silent = false } = {}) {
 
     renderFundLinkStatus();
     renderAll(entries, settings);
+    refreshFundHistorySection({ force: true });
     if (!silent) toast(`Synced ${delta.length} new day${delta.length > 1 ? 's' : ''} ✓`);
   } catch (err) {
     console.error(err);
