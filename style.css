@@ -133,6 +133,15 @@ html[data-theme="light"] .app-header {
   display: flex; align-items: center; gap: 10px;
 }
 
+.header-back-btn {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); font-size: .95rem;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+.header-back-btn:hover { color: var(--text); background: var(--surface3); }
+
 .brand-logo {
   width: 34px; height: 34px;
   background: var(--indigo);
@@ -1585,4 +1594,113 @@ html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator {
 
 @media (min-width: 1300px) {
   .user-page { max-width: 1280px; }
+}
+
+/* ══════════════════════════════════════════════════════
+   Home — Quick Access card
+   Surfaces the app's core Step-Up / Step-Down feature (and
+   Account) right on the Home page instead of leaving them only
+   reachable by tapping into Account and scrolling. Shows on both
+   mobile and desktop.
+══════════════════════════════════════════════════════ */
+.quick-access-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.quick-access-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+.quick-access-card:hover { border-color: var(--indigo-soft); transform: translateY(-1px); }
+.quick-access-card:active { transform: translateY(0); }
+.quick-access-icon {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem; background: var(--indigo-dim); color: var(--indigo);
+}
+.quick-access-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.quick-access-title { font-size: .86rem; font-weight: 700; color: var(--text); }
+.quick-access-sub { font-size: .72rem; color: var(--muted); }
+.quick-access-arrow { margin-left: auto; color: var(--muted); flex-shrink: 0; }
+
+@media (min-width: 600px) {
+  .quick-access-row { flex-direction: row; }
+  .quick-access-card { flex: 1; }
+}
+
+/* ══════════════════════════════════════════════════════
+   Desktop Side Navigation (≥900px)
+   A persistent left rail replaces the fixed bottom tab bar on
+   wide screens, so the app reads as a real desktop layout instead
+   of a phone screen stretched into the middle of the page. It
+   duplicates the 5 primary pages (same .nav-item/data-page click
+   binding as the bottom nav) plus a dedicated Step-Up shortcut.
+══════════════════════════════════════════════════════ */
+.side-nav { display: none; }
+
+@media (min-width: 900px) {
+  body { padding-bottom: 0; }
+  .bottom-nav, .swipe-dots { display: none !important; }
+
+  .side-nav {
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; width: 232px;
+    background: rgba(7,9,15,.92);
+    border-right: 1px solid var(--border);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    z-index: 250; padding: 18px 14px; overflow-y: auto;
+  }
+  html[data-theme="light"] .side-nav { background: rgba(255,255,255,.92); }
+
+  .side-nav-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; }
+  .side-nav-brand h1 { font-size: 1.08rem; font-weight: 800; letter-spacing: -.02em; color: var(--text); }
+
+  .side-nav-back {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; margin-bottom: 12px;
+    border-radius: var(--radius-sm);
+    color: var(--muted); font-size: .8rem; font-weight: 600;
+    transition: background .2s var(--ease), color .2s var(--ease);
+  }
+  .side-nav-back .bi { font-size: .95rem; }
+  .side-nav-back:hover { background: var(--surface2); color: var(--text); }
+
+  .side-nav-stepup {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px; margin-bottom: 14px;
+    border-radius: var(--radius-sm);
+    background: var(--indigo-dim); color: var(--indigo);
+    font-size: .82rem; font-weight: 700; cursor: pointer;
+    transition: filter .2s var(--ease);
+  }
+  .side-nav-stepup .bi { font-size: 1.05rem; }
+  .side-nav-stepup:hover { filter: brightness(1.15); }
+
+  .side-nav-label {
+    font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); padding: 10px 12px 6px; font-weight: 700;
+  }
+
+  .side-nav-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: var(--radius-sm);
+    color: var(--text2); font-size: .84rem; font-weight: 600;
+    margin-bottom: 2px; text-align: left; width: 100%;
+    transition: background .2s var(--ease), color .2s var(--ease);
+  }
+  .side-nav-link .bi { font-size: 1.05rem; width: 18px; text-align: center; color: var(--muted); }
+  .side-nav-link:hover { background: var(--surface2); color: var(--text); }
+  .side-nav-link.active { background: var(--surface2); color: var(--text); }
+  .side-nav-link.active .bi { color: var(--indigo); }
+
+  .app-shell { margin-left: 232px; }
+  .app-header-brand { display: none; }
+
+  /* Toast + modal recenter within the visible content area rather
+     than the full window (which now includes the side-nav strip). */
+  #toast { left: calc(50% + 116px); bottom: 24px; }
+  .modal-overlay { padding-left: 248px; }
 }

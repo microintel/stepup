@@ -266,7 +266,10 @@ document.querySelectorAll('.nav-item').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
+    // Mark every nav item pointing at this page as active — not just the one
+    // clicked — so the desktop side-nav and the mobile bottom-nav (which
+    // duplicate the same 5 pages) always stay in sync with each other.
+    document.querySelectorAll(`.nav-item[data-page="${btn.dataset.page}"]`).forEach(b => b.classList.add('active'));
     document.getElementById(btn.dataset.page).classList.add('active');
     syncSwipeDots(btn.dataset.page);
     if (btn.dataset.page === 'page-graph')   {
