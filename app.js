@@ -7,12 +7,13 @@ import { openDB, dbGet, dbPut, dbDel, dbAll, dbClr,
          dbGetSettings, dbPutSettings,
          dbGetEntries, dbPutEntry, dbDelEntry, dbClearEntries,
          dbGetAllProfiles, dbPutProfile, dbDelProfile } from './db.js';
-import { toast, todayStr, dateToStr }                   from './helpers.js';
-import { recalcAll, saveCalcEntries, sipsBetween, amountForDate } from './calc.js';
+import { toast, todayStr, dateToStr, fmtK }                   from './helpers.js';
+import { recalcAll, saveCalcEntries, sipsBetween, amountForDate, projectGoalScenarios } from './calc.js';
 import {
   renderLineChart, applyRangeToMain,
   setActiveRange, wireSelectionDrag,
   renderFundHistoryChart, resetFundHistoryZoom, renderFundProjectionChart,
+  applyRangeToPnl, resetPnlZoom, renderGoalProjectionChart,
 } from './charts.js';
 import {
   renderAll, renderTable, renderUserPage,
@@ -22,6 +23,7 @@ import {
 import {
   readFileAsJson, parseFundFile, buildEntriesFromNavHistory,
   fetchSchemeFromMfapi, buildSyncDelta, buildFundGrowthSeries, buildFundProjection,
+  buildFundYearlyReturns,
 } from './fund-sync.js';
 
 /* ══════════════════════════════════════════════════════
@@ -395,6 +397,11 @@ function applySettingsToUI() {
   document.getElementById('settings-info').textContent =
     `Active: ₹${amt.toLocaleString('en-IN')} SIP from ${settings.startDate}`;
   document.getElementById('settings-info-header').textContent = `₹${amt.toLocaleString('en-IN')}/mo`;
+
+  const goalAmtInput = document.getElementById('goal-amount');
+  const goalDateInput = document.getElementById('goal-date');
+  if (goalAmtInput)  goalAmtInput.value  = settings.goalAmount || '';
+  if (goalDateInput) goalDateInput.value = settings.goalDate   || '';
 }
 
 /* ══════════════════════════════════════════════════════
@@ -429,6 +436,36 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   entries.sort((a, b) => a.date.localeCompare(b.date));
   renderAll(entries, settings);
   toast('Settings saved ✓');
+});
+
+/* ══════════════════════════════════════════════════════
+   Save / Clear Investment Goal (profile-scoped)
+══════════════════════════════════════════════════════ */
+document.getElementById('btn-save-goal').addEventListener('click', async () => {
+  if (!activeProfile) { toast('No active SIP profile.'); return; }
+  if (!settings) { toast('Save your SIP settings first.'); return; }
+  const amt  = parseFloat(document.getElementById('goal-amount').value);
+  const date = document.getElementById('goal-date').value;
+  if (!amt || amt <= 0) { toast('Enter a valid target corpus.'); return; }
+
+  settings.goalAmount = amt;
+  settings.goalDate   = date || null;
+  await dbPutSettings(activeProfile.id, settings);
+  renderAll(entries, settings);
+  if (fundHistCache.data) renderGoalProjectionSection(fundHistCache.data.series);
+  toast('Goal saved ✓');
+});
+
+document.getElementById('btn-clear-goal').addEventListener('click', async () => {
+  if (!activeProfile || !settings) return;
+  settings.goalAmount = null;
+  settings.goalDate   = null;
+  await dbPutSettings(activeProfile.id, settings);
+  document.getElementById('goal-amount').value = '';
+  document.getElementById('goal-date').value   = '';
+  renderAll(entries, settings);
+  document.getElementById('goal-projection-section').style.display = 'none';
+  toast('Goal cleared');
 });
 
 /* ══════════════════════════════════════════════════════
@@ -725,6 +762,7 @@ async function refreshFundHistorySection({ force = false } = {}) {
     bodyEl.style.display = 'none';
     if (resetBtn) resetBtn.style.display = 'none';
     document.getElementById('fund-projection-section').style.display = 'none';
+    document.getElementById('goal-projection-section').style.display = 'none';
     return;
   }
 
@@ -742,6 +780,7 @@ async function refreshFundHistorySection({ force = false } = {}) {
       emptyEl.style.display = 'flex';
       emptyEl.querySelector('span').textContent = "Couldn't load this fund's full history right now — try again later.";
       document.getElementById('fund-projection-section').style.display = 'none';
+      document.getElementById('goal-projection-section').style.display = 'none';
       return;
     }
   }
@@ -751,6 +790,7 @@ async function refreshFundHistorySection({ force = false } = {}) {
     loadingEl.style.display = 'none';
     emptyEl.style.display = 'flex';
     document.getElementById('fund-projection-section').style.display = 'none';
+    document.getElementById('goal-projection-section').style.display = 'none';
     return;
   }
 
@@ -773,6 +813,7 @@ async function refreshFundHistorySection({ force = false } = {}) {
 
   renderFundHistoryChart(series);
   renderFundProjectionSection(series);
+  renderGoalProjectionSection(series);
 }
 
 function renderFundProjectionSection(series) {
@@ -804,8 +845,73 @@ document.getElementById('fund-proj-horizon')?.addEventListener('click', e => {
   document.querySelectorAll('#fund-proj-horizon .range-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   fundProjYears = parseInt(btn.dataset.years, 10);
-  if (fundHistCache.data) renderFundProjectionSection(fundHistCache.data.series);
+  if (fundHistCache.data) {
+    renderFundProjectionSection(fundHistCache.data.series);
+    renderGoalProjectionSection(fundHistCache.data.series);
+  }
 });
+
+/* ══════════════════════════════════════════════════════
+   Path to Target Corpus — SIP + fund's own historical returns,
+   projected toward the goal amount set on the User page.
+══════════════════════════════════════════════════════ */
+function renderGoalProjectionSection(series) {
+  const sectionEl = document.getElementById('goal-projection-section');
+  if (!sectionEl) return;
+
+  if (!settings || !settings.goalAmount || !series || !series.length) {
+    sectionEl.style.display = 'none';
+    return;
+  }
+
+  const yearlyReturns = buildFundYearlyReturns(series);
+  const calc = recalcAll(entries, settings);
+  if (!yearlyReturns.length || !calc.length) { sectionEl.style.display = 'none'; return; }
+
+  const pcts    = yearlyReturns.map(y => y.returnPct);
+  const avgPct  = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+  const bestPct = Math.max(...pcts);
+  const worstPct = Math.min(...pcts);
+
+  const last = calc[calc.length - 1];
+  const monthlyContribution = currentSipAmount();
+  const monthsAhead = fundProjYears * 12;
+
+  const scenarios = projectGoalScenarios(
+    last.portfolioValue, monthlyContribution,
+    { avg: avgPct, best: bestPct, worst: worstPct },
+    monthsAhead, last.date,
+  );
+
+  sectionEl.style.display = '';
+  renderGoalProjectionChart(scenarios, settings.goalAmount);
+
+  const legendEl = document.getElementById('goal-proj-legend');
+  if (legendEl) {
+    const row = (color, label, pct) => `
+      <div class="fund-proj-leg-item">
+        <span class="fund-proj-leg-dot" style="background:${color}"></span>
+        <span class="fund-proj-leg-text">${label}<br><strong>${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%/yr</strong></span>
+      </div>`;
+    legendEl.innerHTML =
+      row('#00c853', 'Optimistic · best year on record', bestPct) +
+      row('#2f81f7', 'Expected · average year',           avgPct) +
+      row('#ff5252', 'Pessimistic · worst year on record', worstPct);
+  }
+
+  const reachEl = document.getElementById('goal-proj-reach-text');
+  if (reachEl) {
+    const hit = scenarios.expected.find(p => p.value >= settings.goalAmount);
+    if (hit) {
+      const label = new Date(hit.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      reachEl.textContent = `At the expected rate, you'll reach ${fmtK(settings.goalAmount)} by ${label}.`;
+      reachEl.className = 'goal-projection-text on-track';
+    } else {
+      reachEl.textContent = `Not projected to reach ${fmtK(settings.goalAmount)} within ${fundProjYears} years at the expected rate — try a longer horizon above.`;
+      reachEl.className = 'goal-projection-text behind';
+    }
+  }
+}
 
 document.getElementById('btn-reset-fund-history-zoom')?.addEventListener('click', resetFundHistoryZoom);
 
@@ -1101,6 +1207,8 @@ document.getElementById('btn-reset-row').addEventListener('click', async () => {
   document.getElementById('sip-start').value              = '';
   document.getElementById('settings-info').textContent    = '';
   document.getElementById('settings-info-header').textContent = '';
+  document.getElementById('goal-amount').value             = '';
+  document.getElementById('goal-date').value                = '';
   renderAll(entries, settings);
   renderUserPage(entries, settings);
   renderScheduleList();
@@ -1153,6 +1261,23 @@ document.getElementById('btn-reset-zoom').addEventListener('click', () => {
   document.querySelectorAll('#range-pills-line .range-pill').forEach(p =>
     p.classList.toggle('active', p.dataset.range === 'all'));
   setActiveRange('line', 'all');
+});
+
+/* ══════════════════════════════════════════════════════
+   Profit / Loss — Range Pills & Reset Zoom
+══════════════════════════════════════════════════════ */
+document.querySelectorAll('#range-pills-pnl .range-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('#range-pills-pnl .range-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    applyRangeToPnl(pill.dataset.range);
+  });
+});
+
+document.getElementById('btn-reset-pnl-zoom').addEventListener('click', () => {
+  resetPnlZoom();
+  document.querySelectorAll('#range-pills-pnl .range-pill').forEach(p =>
+    p.classList.toggle('active', p.dataset.range === 'all'));
 });
 
 /* ══════════════════════════════════════════════════════

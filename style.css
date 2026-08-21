@@ -546,6 +546,32 @@ html[data-theme="light"] .section { background: rgba(255,255,255,.8); }
 .section-body { padding: 16px; }
 
 /* ══════════════════════════════════════════════════════
+   Goal Progress
+══════════════════════════════════════════════════════ */
+.goal-progress-track {
+  height: 10px; border-radius: 20px;
+  background: var(--surface3); overflow: hidden;
+  border: 1px solid var(--border);
+}
+.goal-progress-fill {
+  height: 100%; border-radius: 20px;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  transition: width .6s ease;
+}
+.goal-progress-fill.behind { background: linear-gradient(90deg, var(--amber), var(--red)); }
+.goal-progress-labels {
+  display: flex; justify-content: space-between;
+  margin-top: 8px; font-size: .78rem; color: var(--muted);
+  font-family: var(--mono);
+}
+.goal-projection-text {
+  margin-top: 12px; font-size: .82rem; color: var(--text2);
+  line-height: 1.5;
+}
+.goal-projection-text.on-track { color: var(--green); }
+.goal-projection-text.behind   { color: var(--red); }
+
+/* ══════════════════════════════════════════════════════
    Entry Form
 ══════════════════════════════════════════════════════ */
 .entry-form { display: flex; gap: 12px; flex-direction: column; }

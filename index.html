@@ -109,6 +109,24 @@
       </div>
     </div>
 
+    <!-- Goal Progress -->
+    <div class="section" id="goal-section" style="display:none;">
+      <div class="section-head">
+        <h2><i class="bi bi-flag-fill section-icon"></i>Goal Progress</h2>
+        <span class="card-value" id="goal-pct">0%</span>
+      </div>
+      <div class="section-body">
+        <div class="goal-progress-track">
+          <div class="goal-progress-fill" id="goal-progress-fill" style="width:0%;"></div>
+        </div>
+        <div class="goal-progress-labels">
+          <span id="goal-current">₹0</span>
+          <span id="goal-target">of ₹0</span>
+        </div>
+        <p class="goal-projection-text" id="goal-projection-text"></p>
+      </div>
+    </div>
+
     <!-- Ledger groups — replaces the small dashboard card grid -->
     <div class="ledger-groups">
 
@@ -259,11 +277,11 @@
           <thead>
             <tr>
               <th>#</th><th>Date</th><th>% Chg</th><th>SIP</th>
-              <th>Portfolio</th><th>Invested</th><th style="text-align:right;">Act</th>
+              <th>Portfolio</th><th>Invested</th><th>P&amp;L</th><th style="text-align:right;">Act</th>
             </tr>
           </thead>
           <tbody id="history-body">
-            <tr><td colspan="7"><div class="empty"><i class="bi bi-inbox"></i><span>No entries yet.</span></div></td></tr>
+            <tr><td colspan="8"><div class="empty"><i class="bi bi-inbox"></i><span>No entries yet.</span></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -436,6 +454,28 @@
       </div>
     </div>
 
+    <div class="section">
+      <div class="chart-panel active" style="padding:14px 16px;">
+        <div class="chart-header">
+          <h2 style="font-size:.95rem;margin:0;"><i class="bi bi-graph-up-arrow section-icon"></i> Profit / Loss</h2>
+          <button class="btn btn-secondary btn-sm" id="btn-reset-pnl-zoom">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </button>
+        </div>
+        <span class="chart-subtitle"><i class="bi bi-info-circle"></i> scroll/pinch to zoom, drag to pan</span>
+        <div class="range-pills" id="range-pills-pnl" style="margin:10px 0;">
+          <button class="range-pill" data-range="7d">1W</button>
+          <button class="range-pill" data-range="1">1M</button>
+          <button class="range-pill" data-range="6">6M</button>
+          <button class="range-pill" data-range="12">1Y</button>
+          <button class="range-pill" data-range="36">3Y</button>
+          <button class="range-pill" data-range="60">5Y</button>
+          <button class="range-pill active" data-range="all">Max</button>
+        </div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="chart-pnl"></canvas></div>
+      </div>
+    </div>
+
     <div class="section" id="fund-history-section">
       <div class="chart-panel active" style="padding:14px 16px;">
         <div class="chart-header">
@@ -496,6 +536,19 @@
         <div class="chart-wrap" style="height:260px;"><canvas id="chart-fund-projection"></canvas></div>
         <div class="fund-proj-legend" id="fund-proj-legend"></div>
         <div class="fund-proj-note"><i class="bi bi-info-circle"></i> Based on this fund's own best, worst and average calendar-year returns — not a guarantee.</div>
+      </div>
+    </div>
+
+    <div class="section" id="goal-projection-section" style="display:none;">
+      <div class="chart-panel active" style="padding:14px 16px;">
+        <div class="chart-header">
+          <h2 style="font-size:.95rem;margin:0;"><i class="bi bi-flag-fill section-icon"></i> Path to Target Corpus</h2>
+        </div>
+        <span class="chart-subtitle"><i class="bi bi-info-circle"></i> continues from today's value + your SIP, three scenarios</span>
+        <div class="chart-wrap" style="height:260px;"><canvas id="chart-goal-projection"></canvas></div>
+        <div class="fund-proj-legend" id="goal-proj-legend"></div>
+        <p class="goal-projection-text" id="goal-proj-reach-text" style="padding:0 2px;"></p>
+        <div class="fund-proj-note"><i class="bi bi-info-circle"></i> Based on this fund's own best, worst and average calendar-year returns, plus your current SIP — not a guarantee.</div>
       </div>
     </div>
 
@@ -619,6 +672,32 @@
         </div>
         <div id="skip-list" class="schedule-list">
           <span class="muted-note">No skipped months.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Investment Goal -->
+    <div class="user-section">
+      <div class="user-section-title"><i class="bi bi-flag-fill"></i> Investment Goal</div>
+      <div class="user-subblock user-subblock-last">
+        <p class="subblock-hint">Set a target corpus and date to track progress on the dashboard.</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label><i class="bi bi-currency-rupee"></i> Target Corpus (₹)</label>
+            <input type="text" inputmode="decimal" id="goal-amount" placeholder="e.g. 1000000" />
+          </div>
+          <div class="form-group">
+            <label><i class="bi bi-calendar-event"></i> Target Date</label>
+            <input type="date" id="goal-date" />
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" id="btn-save-goal">
+            <i class="bi bi-check2-circle"></i> Save Goal
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-clear-goal">
+            <i class="bi bi-x-circle"></i> Clear
+          </button>
         </div>
       </div>
     </div>
